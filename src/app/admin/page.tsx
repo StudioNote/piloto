@@ -15,6 +15,15 @@ export default function AdminPage() {
           </p>
           <p className="text-xs text-gray-400 mt-1">Clients &amp; interventions</p>
         </Link>
+        <Link
+          href="/admin/radio"
+          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
+        >
+          <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
+            Radio
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Radios &amp; facturation mensuelle</p>
+        </Link>
         {["Documents", "Paramètres"].map((module) => (
           <div
             key={module}
