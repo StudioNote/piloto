@@ -23,11 +23,16 @@ interface OneTimeSupplement { key: number; label: string; montant: number; }
 const eur = (n: number, decimals = 0) =>
   n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: decimals });
 
-export function BillingPanel({ radioId }: { radioId: string }) {
+export function BillingPanel({
+  radioId,
+  tranches,
+}: {
+  radioId: string;
+  tranches: Tranche[];
+}) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-  const [tranches, setTranches] = useState<Tranche[]>([]);
   const [exclusions, setExclusions] = useState<Set<string>>(new Set());
   const [recurring, setRecurring] = useState<DbSupplement[]>([]);
   const [oneTime, setOneTime] = useState<OneTimeSupplement[]>([]);
@@ -42,12 +47,7 @@ export function BillingPanel({ radioId }: { radioId: string }) {
     const mm = String(month + 1).padStart(2, "0");
     const lastDay = new Date(year, month + 1, 0).getDate();
 
-    const [trancheRes, exclRes, suppRes] = await Promise.all([
-      supabase
-        .from("piloto_radio_tranches")
-        .select("id, tranche_debut, tranche_fin, jours_travailles, tarif_horaire")
-        .eq("radio_id", radioId)
-        .order("created_at"),
+    const [exclRes, suppRes] = await Promise.all([
       supabase
         .from("piloto_radio_exclusions")
         .select("date")
@@ -62,7 +62,6 @@ export function BillingPanel({ radioId }: { radioId: string }) {
         .order("created_at"),
     ]);
 
-    setTranches(trancheRes.data ?? []);
     setExclusions(new Set((exclRes.data ?? []).map((e: { date: string }) => e.date)));
     setRecurring(suppRes.data ?? []);
     setLoading(false);

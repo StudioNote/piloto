@@ -9,11 +9,14 @@ import Link from "next/link";
 
 export default async function FicheRadioPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
-  const { data: radio } = await supabase
-    .from("piloto_radios")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  const [{ data: radio }, { data: tranches }] = await Promise.all([
+    supabase.from("piloto_radios").select("*").eq("id", params.id).single(),
+    supabase
+      .from("piloto_radio_tranches")
+      .select("id, tranche_debut, tranche_fin, jours_travailles, tarif_horaire")
+      .eq("radio_id", params.id)
+      .order("created_at"),
+  ]);
 
   if (!radio) notFound();
 
@@ -67,7 +70,7 @@ export default async function FicheRadioPage({ params }: { params: { id: string 
 
       {/* Facturation */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <BillingPanel radioId={radio.id} />
+        <BillingPanel radioId={radio.id} tranches={tranches ?? []} />
       </div>
     </div>
   );
