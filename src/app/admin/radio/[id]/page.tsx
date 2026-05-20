@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { BillingPanel } from "@/components/admin/radio/BillingPanel";
+import { RecurringSupplements } from "@/components/admin/radio/RecurringSupplements";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -84,6 +85,11 @@ export default async function FicheRadioPage({ params }: { params: { id: string 
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Suppléments récurrents */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
+        <RecurringSupplements radioId={radio.id} />
       </div>
 
       {/* Facturation */}

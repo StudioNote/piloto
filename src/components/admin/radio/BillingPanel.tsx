@@ -10,6 +10,8 @@ const MONTHS_FR = [
 ];
 const DAYS_FR = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
 
+interface DbSupplement { id: string; label: string; montant: number | string; }
+interface OneTimeSupplement { key: number; label: string; montant: number; }
 interface RadioBilling {
   id: string;
   tranche_debut: string;
@@ -18,45 +20,58 @@ interface RadioBilling {
   jours_travailles: string[];
 }
 
+const eur = (n: number, decimals = 0) =>
+  n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: decimals });
+
 export function BillingPanel({ radio }: { radio: RadioBilling }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [exclusions, setExclusions] = useState<Set<string>>(new Set());
+  const [recurring, setRecurring] = useState<DbSupplement[]>([]);
+  const [oneTime, setOneTime] = useState<OneTimeSupplement[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [otLabel, setOtLabel] = useState("");
+  const [otMontant, setOtMontant] = useState("");
 
-  const fetchExclusions = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
     const mm = String(month + 1).padStart(2, "0");
     const lastDay = new Date(year, month + 1, 0).getDate();
-    const { data } = await supabase
-      .from("piloto_radio_exclusions")
-      .select("date")
-      .eq("radio_id", radio.id)
-      .gte("date", `${year}-${mm}-01`)
-      .lte("date", `${year}-${mm}-${lastDay}`);
-    setExclusions(new Set((data ?? []).map((e: { date: string }) => e.date)));
+
+    const [exclRes, suppRes] = await Promise.all([
+      supabase
+        .from("piloto_radio_exclusions")
+        .select("date")
+        .eq("radio_id", radio.id)
+        .gte("date", `${year}-${mm}-01`)
+        .lte("date", `${year}-${mm}-${String(lastDay).padStart(2, "0")}`),
+      supabase
+        .from("piloto_radio_supplements")
+        .select("id, label, montant")
+        .eq("radio_id", radio.id)
+        .eq("recurrent", true)
+        .order("created_at"),
+    ]);
+
+    setExclusions(new Set((exclRes.data ?? []).map((e: { date: string }) => e.date)));
+    setRecurring(suppRes.data ?? []);
     setLoading(false);
   }, [radio.id, year, month]);
 
-  useEffect(() => { fetchExclusions(); }, [fetchExclusions]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   async function toggleExclusion(date: string) {
     setToggling(date);
     const supabase = createClient();
     if (exclusions.has(date)) {
-      await supabase
-        .from("piloto_radio_exclusions")
-        .delete()
-        .eq("radio_id", radio.id)
-        .eq("date", date);
+      await supabase.from("piloto_radio_exclusions").delete()
+        .eq("radio_id", radio.id).eq("date", date);
       setExclusions((prev) => { const s = new Set(prev); s.delete(date); return s; });
     } else {
-      await supabase
-        .from("piloto_radio_exclusions")
-        .insert({ radio_id: radio.id, date });
+      await supabase.from("piloto_radio_exclusions").insert({ radio_id: radio.id, date });
       setExclusions((prev) => { const s = new Set(prev); s.add(date); return s; });
     }
     setToggling(null);
@@ -72,17 +87,30 @@ export function BillingPanel({ radio }: { radio: RadioBilling }) {
     else setMonth((m) => m + 1);
   }
 
-  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
+  function addOneTime(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otLabel || !otMontant) return;
+    setOneTime((prev) => [...prev, { key: Date.now(), label: otLabel, montant: parseFloat(otMontant) }]);
+    setOtLabel("");
+    setOtMontant("");
+  }
 
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
   const allPotential = getAllPotentialDays(year, month, radio.jours_travailles);
   const feries = getJoursFeries(year);
-  const workedDays = allPotential.filter((d) => !feries.has(d) && !exclusions.has(d));
-  const feriesCount = allPotential.filter((d) => feries.has(d)).length;
+
+  // Fériés travaillés par défaut — exclus seulement si présents dans exclusions
+  const workedDays = allPotential.filter((d) => !exclusions.has(d));
+  const workedFeriesCount = allPotential.filter((d) => feries.has(d) && !exclusions.has(d)).length;
 
   const duration = getDurationHours(radio.tranche_debut, radio.tranche_fin);
   const tarif = Number(radio.tarif_horaire);
   const totalHours = workedDays.length * duration;
-  const totalAmount = totalHours * tarif;
+  const hoursAmount = totalHours * tarif;
+  const recurringTotal = recurring.reduce((sum, s) => sum + Number(s.montant), 0);
+  const oneTimeTotal = oneTime.reduce((sum, s) => sum + s.montant, 0);
+  const grandTotal = hoursAmount + recurringTotal + oneTimeTotal;
+  const hasSupplements = recurring.length > 0 || oneTime.length > 0;
 
   return (
     <div>
@@ -109,16 +137,16 @@ export function BillingPanel({ radio }: { radio: RadioBilling }) {
         </div>
       </div>
 
-      {/* Résumé chiffré */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      {/* Cartes résumé */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="bg-gray-50 rounded-xl p-4">
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Jours travaillés</p>
           <p className="text-3xl font-bold text-gray-900">{workedDays.length}</p>
           <p className="text-xs text-gray-400 mt-1.5">
-            {feriesCount > 0 && `${feriesCount} fériés`}
-            {feriesCount > 0 && exclusions.size > 0 && " · "}
-            {exclusions.size > 0 && `${exclusions.size} exclus`}
-            {feriesCount === 0 && exclusions.size === 0 && "Aucune exclusion"}
+            {workedFeriesCount > 0 && `★ ${workedFeriesCount} féri${workedFeriesCount > 1 ? "és" : "é"}`}
+            {workedFeriesCount > 0 && exclusions.size > 0 && " · "}
+            {exclusions.size > 0 && `${exclusions.size} exclu${exclusions.size > 1 ? "s" : ""}`}
+            {workedFeriesCount === 0 && exclusions.size === 0 && "Aucune exclusion"}
           </p>
         </div>
         <div className="bg-gray-50 rounded-xl p-4">
@@ -131,16 +159,53 @@ export function BillingPanel({ radio }: { radio: RadioBilling }) {
           </p>
         </div>
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-          <p className="text-xs text-blue-400 uppercase tracking-wide mb-1">À facturer</p>
-          <p className="text-3xl font-bold text-blue-700">
-            {totalAmount.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}
+          <p className="text-xs text-blue-400 uppercase tracking-wide mb-1">Total à facturer</p>
+          <p className="text-3xl font-bold text-blue-700">{eur(grandTotal)}</p>
+          <p className="text-xs text-blue-400 mt-1.5">
+            {tarif} €/h{hasSupplements ? " + suppléments" : ""}
           </p>
-          <p className="text-xs text-blue-400 mt-1.5">{tarif} €/h</p>
         </div>
       </div>
 
+      {/* Détail du total quand il y a des suppléments */}
+      {hasSupplements && (
+        <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-2 text-sm">
+          <div className="flex justify-between text-gray-600">
+            <span>
+              Heures{" "}
+              <span className="text-gray-400">
+                ({workedDays.length}j × {duration}h × {tarif} €)
+              </span>
+            </span>
+            <span>{eur(hoursAmount, 2)}</span>
+          </div>
+          {recurring.map((s) => (
+            <div key={s.id} className="flex justify-between text-gray-600">
+              <span>
+                {s.label}{" "}
+                <span className="text-xs text-gray-400">récurrent</span>
+              </span>
+              <span>+{eur(Number(s.montant), 2)}</span>
+            </div>
+          ))}
+          {oneTime.map((s) => (
+            <div key={s.key} className="flex justify-between text-gray-600">
+              <span>
+                {s.label}{" "}
+                <span className="text-xs text-gray-400">ponctuel</span>
+              </span>
+              <span>+{eur(s.montant, 2)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-200">
+            <span>Total</span>
+            <span>{eur(grandTotal, 2)}</span>
+          </div>
+        </div>
+      )}
+
       {/* Chips jours */}
-      <div>
+      <div className="mb-6">
         <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">
           Jours prévus — cliquer pour exclure / réintégrer
         </p>
@@ -154,52 +219,101 @@ export function BillingPanel({ radio }: { radio: RadioBilling }) {
               const isFerie = feries.has(dateStr);
               const isExcluded = exclusions.has(dateStr);
               const d = new Date(dateStr + "T00:00:00");
-              const label = `${DAYS_FR[d.getDay()]} ${d.getDate()}`;
-
-              if (isFerie) {
-                return (
-                  <span
-                    key={dateStr}
-                    title="Jour férié — exclu automatiquement"
-                    className="text-xs px-2.5 py-1 rounded-full bg-orange-50 text-orange-400 border border-orange-100 line-through cursor-default"
-                  >
-                    {label}
-                  </span>
-                );
-              }
+              const dayLabel = `${DAYS_FR[d.getDay()]} ${d.getDate()}`;
 
               return (
                 <button
                   key={dateStr}
                   onClick={() => toggleExclusion(dateStr)}
                   disabled={toggling === dateStr}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                  title={
+                    isFerie
+                      ? isExcluded
+                        ? "Férié — exclu (cliquer pour travailler)"
+                        : "Férié — travaillé (cliquer pour exclure)"
+                      : isExcluded
+                      ? "Exclu (cliquer pour réintégrer)"
+                      : "Cliquer pour exclure"
+                  }
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-all disabled:opacity-50 ${
                     isExcluded
                       ? "bg-gray-100 text-gray-400 border-gray-200 line-through"
+                      : isFerie
+                      ? "bg-green-50 text-green-700 border-green-400 ring-1 ring-green-300 hover:bg-green-100"
                       : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                  } disabled:opacity-50`}
+                  }`}
                 >
-                  {label}
+                  {isFerie && !isExcluded ? `★ ${dayLabel}` : dayLabel}
                 </button>
               );
             })}
           </div>
         )}
 
-        <div className="flex gap-5 mt-4 text-xs text-gray-400">
+        <div className="flex gap-5 mt-3 text-xs text-gray-400">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-green-300 inline-block" />
             Travaillé
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-orange-300 inline-block" />
-            Jour férié
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />
+            ★ Férié travaillé
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block" />
-            Exclu manuellement
+            Exclu
           </span>
         </div>
+      </div>
+
+      {/* Suppléments ponctuels */}
+      <div className="border-t border-gray-100 pt-5">
+        <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">
+          Suppléments ponctuels ce mois
+        </p>
+        {oneTime.length > 0 && (
+          <div className="space-y-1.5 mb-3">
+            {oneTime.map((s) => (
+              <div key={s.key} className="flex items-center justify-between py-1">
+                <span className="text-sm text-gray-700">{s.label}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-900">+{eur(s.montant, 2)}</span>
+                  <button
+                    onClick={() => setOneTime((prev) => prev.filter((x) => x.key !== s.key))}
+                    className="text-sm text-red-400 hover:text-red-600 leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <form onSubmit={addOneTime} className="flex gap-2">
+          <input
+            type="text"
+            value={otLabel}
+            onChange={(e) => setOtLabel(e.target.value)}
+            placeholder="Label (ex: Transport)"
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            value={otMontant}
+            onChange={(e) => setOtMontant(e.target.value)}
+            placeholder="€"
+            step="0.01"
+            min="0"
+            className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            disabled={!otLabel || !otMontant}
+            className="px-4 py-2 bg-gray-800 hover:bg-gray-900 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            + Ajouter
+          </button>
+        </form>
       </div>
     </div>
   );
