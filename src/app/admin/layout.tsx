@@ -36,6 +36,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           >
             Radio
           </Link>
+          <Link
+            href="/admin/radio/remplacements"
+            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            Remplacements
+          </Link>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">{user.email}</span>
