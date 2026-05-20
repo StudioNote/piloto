@@ -1,6 +1,6 @@
 "use client";
 
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 
 interface Remplacement {
@@ -11,13 +11,6 @@ interface Remplacement {
   tranche_fin: string;
   tarif_horaire: number;
   notes: string | null;
-}
-
-interface Props {
-  radioId: string;
-  trancheDebut: string;
-  trancheFin: string;
-  tarifHoraire: number;
 }
 
 function calcDays(debut: string, fin: string): number {
@@ -45,23 +38,23 @@ function formatDate(s: string) {
 const eur = (n: number) =>
   n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 
-export function RadioRemplacements({ radioId, trancheDebut, trancheFin, tarifHoraire }: Props) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+const inputCls =
+  "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+
+export function RadioRemplacements({ radioId }: { radioId: string }) {
+  const supabase = createClient();
 
   const [remplacements, setRemplacements] = useState<Remplacement[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [dateDebut, setDateDebut] = useState("");
   const [dateFin, setDateFin] = useState("");
-  const [tDebut, setTDebut] = useState(trancheDebut.slice(0, 5));
-  const [tFin, setTFin] = useState(trancheFin.slice(0, 5));
-  const [tarif, setTarif] = useState(String(tarifHoraire));
+  const [tDebut, setTDebut] = useState("");
+  const [tFin, setTFin] = useState("");
+  const [tarif, setTarif] = useState("");
   const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
 
   const days = calcDays(dateDebut, dateFin);
   const hours = calcHours(tDebut, tFin);
@@ -81,6 +74,15 @@ export function RadioRemplacements({ radioId, trancheDebut, trancheFin, tarifHor
 
   useEffect(() => { load(); }, []);
 
+  function resetForm() {
+    setDateDebut("");
+    setDateFin("");
+    setTDebut("");
+    setTFin("");
+    setTarif("");
+    setNotes("");
+  }
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -95,12 +97,7 @@ export function RadioRemplacements({ radioId, trancheDebut, trancheFin, tarifHor
       notes: notes || null,
     });
     setAdding(false);
-    setDateDebut("");
-    setDateFin("");
-    setTDebut(trancheDebut.slice(0, 5));
-    setTFin(trancheFin.slice(0, 5));
-    setTarif(String(tarifHoraire));
-    setNotes("");
+    resetForm();
     setSaving(false);
     await load();
   }
@@ -109,9 +106,6 @@ export function RadioRemplacements({ radioId, trancheDebut, trancheFin, tarifHor
     await supabase.from("piloto_radio_remplacements").delete().eq("id", id);
     setRemplacements((prev) => prev.filter((r) => r.id !== id));
   }
-
-  const inputCls =
-    "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
 
   return (
     <div>
@@ -128,7 +122,10 @@ export function RadioRemplacements({ radioId, trancheDebut, trancheFin, tarifHor
       </div>
 
       {adding && (
-        <form onSubmit={handleAdd} className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4 space-y-4">
+        <form
+          onSubmit={handleAdd}
+          className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4 space-y-4"
+        >
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -232,7 +229,7 @@ export function RadioRemplacements({ radioId, trancheDebut, trancheFin, tarifHor
             </button>
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={() => { setAdding(false); resetForm(); }}
               className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 transition-colors"
             >
               Annuler
@@ -268,9 +265,12 @@ export function RadioRemplacements({ radioId, trancheDebut, trancheFin, tarifHor
                     )}
                   </div>
                   <div className="text-gray-500 text-xs mt-0.5">
-                    {r.tranche_debut.slice(0, 5)} – {r.tranche_fin.slice(0, 5)} · {h}h/j · {Number(r.tarif_horaire).toLocaleString("fr-FR")} €/h
+                    {r.tranche_debut.slice(0, 5)} – {r.tranche_fin.slice(0, 5)} · {h}h/j ·{" "}
+                    {Number(r.tarif_horaire).toLocaleString("fr-FR")} €/h
                   </div>
-                  {r.notes && <div className="text-gray-400 text-xs mt-0.5 italic">{r.notes}</div>}
+                  {r.notes && (
+                    <div className="text-gray-400 text-xs mt-0.5 italic">{r.notes}</div>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 ml-4 shrink-0">
                   <span className="font-semibold text-gray-900">{eur(a)}</span>

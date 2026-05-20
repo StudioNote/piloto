@@ -3,32 +3,18 @@ import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { modifierRadio } from "../../actions";
 import { notFound } from "next/navigation";
 
-const JOURS = [
-  { value: "lundi", label: "Lundi" },
-  { value: "mardi", label: "Mardi" },
-  { value: "mercredi", label: "Mercredi" },
-  { value: "jeudi", label: "Jeudi" },
-  { value: "vendredi", label: "Vendredi" },
-  { value: "samedi", label: "Samedi" },
-  { value: "dimanche", label: "Dimanche" },
-];
-
 function Field({
   label,
   name,
   type = "text",
   required = false,
   defaultValue = "",
-  step,
-  min,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   defaultValue?: string;
-  step?: string;
-  min?: string;
 }) {
   return (
     <div>
@@ -42,8 +28,6 @@ function Field({
         type={type}
         required={required}
         defaultValue={defaultValue}
-        step={step}
-        min={min}
         className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
     </div>
@@ -54,7 +38,7 @@ export default async function ModifierRadioPage({ params }: { params: { id: stri
   const supabase = await createClient();
   const { data: radio } = await supabase
     .from("piloto_radios")
-    .select("*")
+    .select("id, nom_radio, nom_contact, telephone")
     .eq("id", params.id)
     .single();
 
@@ -81,50 +65,6 @@ export default async function ModifierRadioPage({ params }: { params: { id: stri
           </div>
           <Field label="Nom du contact" name="nom_contact" defaultValue={radio.nom_contact ?? ""} />
           <Field label="Téléphone" name="telephone" type="tel" defaultValue={radio.telephone ?? ""} />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <Field
-            label="Début de tranche"
-            name="tranche_debut"
-            type="time"
-            required
-            defaultValue={radio.tranche_debut.slice(0, 5)}
-          />
-          <Field
-            label="Fin de tranche"
-            name="tranche_fin"
-            type="time"
-            required
-            defaultValue={radio.tranche_fin.slice(0, 5)}
-          />
-          <Field
-            label="Tarif horaire (€)"
-            name="tarif_horaire"
-            type="number"
-            required
-            step="0.01"
-            min="0"
-            defaultValue={String(Number(radio.tarif_horaire))}
-          />
-        </div>
-
-        <div>
-          <p className="block text-sm font-medium text-gray-700 mb-3">Jours travaillés</p>
-          <div className="flex flex-wrap gap-3">
-            {JOURS.map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  name="jours_travailles"
-                  value={value}
-                  defaultChecked={(radio.jours_travailles as string[]).includes(value)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">{label}</span>
-              </label>
-            ))}
-          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-2">

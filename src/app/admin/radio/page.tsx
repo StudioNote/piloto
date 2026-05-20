@@ -6,7 +6,7 @@ export default async function RadioPage() {
   const supabase = await createClient();
   const { data: radios } = await supabase
     .from("piloto_radios")
-    .select("id, nom_radio, nom_contact, telephone, tranche_debut, tranche_fin, tarif_horaire")
+    .select("id, nom_radio, nom_contact, telephone")
     .order("nom_radio");
 
   return (
@@ -35,8 +35,6 @@ export default async function RadioPage() {
                 <th className="text-left px-5 py-3.5 font-medium text-gray-500">Radio</th>
                 <th className="text-left px-5 py-3.5 font-medium text-gray-500">Contact</th>
                 <th className="text-left px-5 py-3.5 font-medium text-gray-500">Téléphone</th>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Tranche horaire</th>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Tarif</th>
                 <th className="px-5 py-3.5" />
               </tr>
             </thead>
@@ -46,12 +44,6 @@ export default async function RadioPage() {
                   <td className="px-5 py-4 font-medium text-gray-800">{r.nom_radio}</td>
                   <td className="px-5 py-4 text-gray-600">{r.nom_contact ?? "—"}</td>
                   <td className="px-5 py-4 text-gray-500">{r.telephone ?? "—"}</td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {r.tranche_debut.slice(0, 5)} – {r.tranche_fin.slice(0, 5)}
-                  </td>
-                  <td className="px-5 py-4 text-gray-500">
-                    {Number(r.tarif_horaire).toLocaleString("fr-FR")} €/h
-                  </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-3">
                       <Link

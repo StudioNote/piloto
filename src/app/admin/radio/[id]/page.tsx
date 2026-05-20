@@ -3,18 +3,9 @@ import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { BillingPanel } from "@/components/admin/radio/BillingPanel";
 import { RecurringSupplements } from "@/components/admin/radio/RecurringSupplements";
 import { RadioRemplacements } from "@/components/admin/radio/RadioRemplacements";
+import { RadioTranches } from "@/components/admin/radio/RadioTranches";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-
-const JOURS_LABELS: Record<string, string> = {
-  lundi: "Lun.",
-  mardi: "Mar.",
-  mercredi: "Mer.",
-  jeudi: "Jeu.",
-  vendredi: "Ven.",
-  samedi: "Sam.",
-  dimanche: "Dim.",
-};
 
 export default async function FicheRadioPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -47,7 +38,6 @@ export default async function FicheRadioPage({ params }: { params: { id: string 
             Modifier
           </Link>
         </div>
-
         <div className="grid grid-cols-2 gap-5 text-sm">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Contact</p>
@@ -57,35 +47,12 @@ export default async function FicheRadioPage({ params }: { params: { id: string 
             <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Téléphone</p>
             <p className="text-gray-800">{radio.telephone ?? "—"}</p>
           </div>
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Tranche horaire</p>
-            <p className="text-gray-800">
-              {radio.tranche_debut.slice(0, 5)} – {radio.tranche_fin.slice(0, 5)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Tarif horaire</p>
-            <p className="text-gray-800">
-              {Number(radio.tarif_horaire).toLocaleString("fr-FR")} €/h
-            </p>
-          </div>
-          <div className="col-span-2">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Jours travaillés</p>
-            <div className="flex flex-wrap gap-1.5">
-              {(radio.jours_travailles as string[]).map((j) => (
-                <span
-                  key={j}
-                  className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium"
-                >
-                  {JOURS_LABELS[j] ?? j}
-                </span>
-              ))}
-              {radio.jours_travailles.length === 0 && (
-                <span className="text-gray-400 text-sm">Aucun jour défini</span>
-              )}
-            </div>
-          </div>
         </div>
+      </div>
+
+      {/* Tranches horaires */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
+        <RadioTranches radioId={radio.id} />
       </div>
 
       {/* Suppléments récurrents */}
@@ -95,25 +62,12 @@ export default async function FicheRadioPage({ params }: { params: { id: string 
 
       {/* Remplacements */}
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
-        <RadioRemplacements
-          radioId={radio.id}
-          trancheDebut={radio.tranche_debut}
-          trancheFin={radio.tranche_fin}
-          tarifHoraire={Number(radio.tarif_horaire)}
-        />
+        <RadioRemplacements radioId={radio.id} />
       </div>
 
       {/* Facturation */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
-        <BillingPanel
-          radio={{
-            id: radio.id,
-            tranche_debut: radio.tranche_debut,
-            tranche_fin: radio.tranche_fin,
-            tarif_horaire: radio.tarif_horaire,
-            jours_travailles: radio.jours_travailles,
-          }}
-        />
+        <BillingPanel radioId={radio.id} />
       </div>
     </div>
   );
