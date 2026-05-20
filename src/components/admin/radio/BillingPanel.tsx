@@ -107,7 +107,7 @@ export function BillingPanel({ radio }: { radio: RadioBilling }) {
   const tarif = Number(radio.tarif_horaire);
   const totalHours = workedDays.length * duration;
   const hoursAmount = totalHours * tarif;
-  const recurringTotal = recurring.reduce((sum, s) => sum + Number(s.montant), 0);
+  const recurringTotal = recurring.reduce((sum, s) => sum + Number(s.montant) * workedDays.length, 0);
   const oneTimeTotal = oneTime.reduce((sum, s) => sum + s.montant, 0);
   const grandTotal = hoursAmount + recurringTotal + oneTimeTotal;
   const hasSupplements = recurring.length > 0 || oneTime.length > 0;
@@ -183,9 +183,11 @@ export function BillingPanel({ radio }: { radio: RadioBilling }) {
             <div key={s.id} className="flex justify-between text-gray-600">
               <span>
                 {s.label}{" "}
-                <span className="text-xs text-gray-400">récurrent</span>
+                <span className="text-xs text-gray-400">
+                  {eur(Number(s.montant), 2)} × {workedDays.length}j
+                </span>
               </span>
-              <span>+{eur(Number(s.montant), 2)}</span>
+              <span>+{eur(Number(s.montant) * workedDays.length, 2)}</span>
             </div>
           ))}
           {oneTime.map((s) => (
