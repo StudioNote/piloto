@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+@theme {
+  --color-sos-primary: #046BD2;
+  --color-sos-primary-hover: #045CB4;
+  --color-sos-btn: #3633E1;
+  --color-sos-btn-hover: #2F2FFC;
+  --color-sos-text: #1E293B;
+  --color-sos-bg: #F0F5FA;
+  --color-sos-border: #D1D5DB;
+}

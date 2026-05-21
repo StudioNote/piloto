@@ -1,83 +1,78 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-
-interface Document {
-  id: string;
-  nom_fichier: string;
-  description: string | null;
-  url_storage: string;
-  created_at: string;
-}
+import { Download } from "lucide-react";
 
 export default async function ClientPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
-  const { data: documents } = await supabase
-    .from("piloto_documents")
-    .select("id, nom_fichier, description, url_storage, created_at")
-    .order("created_at", { ascending: false });
+  const [{ data: clientProfile }, { data: documents }] = await Promise.all([
+    supabase
+      .from("piloto_clients")
+      .select("prenom, nom")
+      .eq("auth_user_id", user.id)
+      .single(),
+    supabase
+      .from("piloto_documents")
+      .select("id, nom_fichier, description, created_at")
+      .order("created_at", { ascending: false }),
+  ]);
 
-  async function signOut() {
-    "use server";
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-    redirect("/login");
-  }
+  const prenom = clientProfile?.prenom ?? clientProfile?.nom ?? "vous";
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <h1 className="text-lg font-bold text-gray-900">Piloto</h1>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{user.email}</span>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="text-sm text-red-600 hover:text-red-700 font-medium"
-            >
-              Déconnexion
-            </button>
-          </form>
-        </div>
-      </nav>
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Mes documents</h2>
-        {!documents || documents.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-            <p className="text-gray-400">Aucun document disponible pour le moment.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {documents.map((doc: Document) => (
-              <div
-                key={doc.id}
-                className="bg-white rounded-xl border border-gray-100 p-5 flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-medium text-gray-800">{doc.nom_fichier}</p>
-                  {doc.description && (
-                    <p className="text-sm text-gray-500 mt-0.5">{doc.description}</p>
-                  )}
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(doc.created_at).toLocaleDateString("fr-FR")}
-                  </p>
-                </div>
-                <a
-                  href={doc.url_storage}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                >
-                  Télécharger
-                </a>
-              </div>
-            ))}
-          </div>
-        )}
+    <div className="max-w-3xl mx-auto px-6 py-10">
+      {/* Message d'accueil */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-sos-text mb-1">
+          Bonjour {prenom},
+        </h1>
+        <p className="text-lg text-gray-500">voici vos documents</p>
       </div>
-    </main>
+
+      {/* Liste des documents */}
+      {!documents || documents.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-sos-border p-12 text-center">
+          <p className="text-lg text-gray-400">
+            Aucun document pour le moment.
+          </p>
+          <p className="text-base text-gray-400 mt-2">
+            Anthony déposera ici vos récapitulatifs et fiches dès qu&apos;ils seront disponibles.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {documents.map((doc) => (
+            <div
+              key={doc.id}
+              className="bg-white rounded-2xl border border-sos-border p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-5"
+            >
+              <div className="flex-1">
+                <p className="text-lg font-semibold text-sos-text">{doc.nom_fichier}</p>
+                {doc.description && (
+                  <p className="text-base text-gray-500 mt-1">{doc.description}</p>
+                )}
+                <p className="text-sm text-gray-400 mt-2">
+                  Déposé le{" "}
+                  {new Date(doc.created_at).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+              <a
+                href={`/client/download/${doc.id}`}
+                className="flex items-center justify-center gap-2 bg-sos-btn hover:bg-sos-btn-hover text-white font-semibold px-6 py-4 rounded-xl text-base transition-colors shrink-0"
+              >
+                <Download size={20} />
+                Télécharger
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

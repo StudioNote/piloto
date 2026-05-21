@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -85,4 +86,91 @@ export async function creerIntervention(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/sos-ordi/${clientId}`);
   redirect(`/admin/sos-ordi/${clientId}`);
+}
+
+// ── Documents ─────────────────────────────────────────────────────────────────
+
+export async function deposerDocument(
+  prevState: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string }> {
+  await assertAdmin();
+  const file = formData.get("fichier") as File | null;
+  const clientId = formData.get("client_id") as string;
+  const description = (formData.get("description") as string) || null;
+
+  if (!file || file.size === 0) return { error: "Aucun fichier sélectionné." };
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${clientId}/${Date.now()}_${safeName}`;
+
+  const bytes = await file.arrayBuffer();
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from("piloto-documents")
+    .upload(path, bytes, { contentType: file.type, upsert: false });
+  if (uploadError) return { error: uploadError.message };
+
+  const { error: dbError } = await supabaseAdmin.from("piloto_documents").insert({
+    client_id: clientId,
+    nom_fichier: file.name,
+    description,
+    url_storage: path,
+  });
+  if (dbError) {
+    await supabaseAdmin.storage.from("piloto-documents").remove([path]);
+    return { error: dbError.message };
+  }
+
+  revalidatePath(`/admin/sos-ordi/${clientId}`);
+  return {};
+}
+
+export async function supprimerDocument(formData: FormData) {
+  await assertAdmin();
+  const id = formData.get("id") as string;
+  const clientId = formData.get("client_id") as string;
+  const path = formData.get("path") as string;
+
+  await supabaseAdmin.storage.from("piloto-documents").remove([path]);
+  await supabaseAdmin.from("piloto_documents").delete().eq("id", id);
+
+  revalidatePath(`/admin/sos-ordi/${clientId}`);
+}
+
+// ── Accès espace client ───────────────────────────────────────────────────────
+
+type AccessState = { password?: string; error?: string } | null;
+
+export async function creerAccesClient(
+  _prev: AccessState,
+  formData: FormData
+): Promise<AccessState> {
+  await assertAdmin();
+  const clientId = formData.get("client_id") as string;
+  const email = formData.get("email") as string;
+
+  if (!email) return { error: "Email client manquant." };
+
+  // Génère un mot de passe temporaire lisible (communicable par téléphone)
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const tempPassword = Array.from(
+    { length: 8 },
+    () => chars[Math.floor(Math.random() * chars.length)]
+  ).join("");
+
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true,
+  });
+  if (error) return { error: error.message };
+
+  const { error: updateError } = await supabaseAdmin
+    .from("piloto_clients")
+    .update({ auth_user_id: data.user.id })
+    .eq("id", clientId);
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/admin/sos-ordi/${clientId}`);
+  return { password: tempPassword };
 }

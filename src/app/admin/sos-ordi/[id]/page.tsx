@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { InterventionsList } from "@/components/admin/sos-ordi/InterventionsList";
+import { DocumentsSection } from "@/components/admin/sos-ordi/DocumentsSection";
+import { CreateAccessButton } from "@/components/admin/sos-ordi/CreateAccessButton";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -28,22 +30,29 @@ export default async function FicheClientPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { mois?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ mois?: string }>;
 }) {
+  const { id } = await params;
+  const { mois } = await searchParams;
   const supabase = await createClient();
 
-  const currentMois =
-    searchParams.mois ?? new Date().toISOString().slice(0, 7);
+  const currentMois = mois ?? new Date().toISOString().slice(0, 7);
 
-  const [{ data: client }, { data: interventions }] = await Promise.all([
-    supabase.from("piloto_clients").select("*").eq("id", params.id).single(),
-    supabase
-      .from("piloto_interventions")
-      .select("*")
-      .eq("client_id", params.id)
-      .order("date", { ascending: false }),
-  ]);
+  const [{ data: client }, { data: interventions }, { data: documents }] =
+    await Promise.all([
+      supabase.from("piloto_clients").select("*").eq("id", id).single(),
+      supabase
+        .from("piloto_interventions")
+        .select("*")
+        .eq("client_id", id)
+        .order("date", { ascending: false }),
+      supabase
+        .from("piloto_documents")
+        .select("id, nom_fichier, description, url_storage, created_at")
+        .eq("client_id", id)
+        .order("created_at", { ascending: false }),
+    ]);
 
   if (!client) notFound();
 
@@ -55,22 +64,22 @@ export default async function FicheClientPage({
     .filter((i) => i.date.startsWith(currentMois))
     .reduce((acc: number, i: { montant: number | null }) => acc + (i.montant ?? 0), 0);
 
+  const clientName = [client.civilite, client.prenom, client.nom].filter(Boolean).join(" ");
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
       <Breadcrumb
         items={[
           { label: "Admin", href: "/admin" },
           { label: "SOS Ordi", href: "/admin/sos-ordi" },
-          { label: [client.civilite, client.prenom, client.nom].filter(Boolean).join(" ") },
+          { label: clientName },
         ]}
       />
 
       {/* Fiche */}
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
         <div className="flex items-start justify-between mb-5">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {[client.civilite, client.prenom, client.nom].filter(Boolean).join(" ")}
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">{clientName}</h2>
           <Link
             href={`/admin/sos-ordi/${client.id}/modifier`}
             className="text-sm text-gray-500 hover:text-gray-800 font-medium border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
@@ -103,6 +112,16 @@ export default async function FicheClientPage({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Accès espace client */}
+        <div className="mt-6 pt-5 border-t border-gray-100">
+          <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Espace client</p>
+          <CreateAccessButton
+            clientId={client.id}
+            email={client.email}
+            hasAccess={!!client.auth_user_id}
+          />
         </div>
       </div>
 
@@ -139,6 +158,19 @@ export default async function FicheClientPage({
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Documents partagés */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-5">
+          Documents partagés
+          {documents && documents.length > 0 && (
+            <span className="ml-2 text-sm font-normal text-gray-400">
+              ({documents.length})
+            </span>
+          )}
+        </h3>
+        <DocumentsSection clientId={client.id} initial={documents ?? []} />
       </div>
 
       {/* Interventions */}
