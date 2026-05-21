@@ -65,7 +65,8 @@ async function paginatePaymentSessions(
       status: "complete",
       created,
       limit: 100,
-      expand: ["data.line_items"],
+      // latest_charge (3 niveaux) permet de déduire les remboursements post-paiement
+      expand: ["data.line_items", "data.payment_intent.latest_charge"],
       ...(cursor ? { starting_after: cursor } : {}),
     });
     // On ne garde que les sessions one-shot — les subscriptions sont déjà
@@ -77,14 +78,23 @@ async function paginatePaymentSessions(
   return all;
 }
 
+function sessionNet(s: Stripe.Checkout.Session): number {
+  const charged = (s.amount_total ?? 0) / 100;
+  if (charged === 0) return 0;
+  const pi = s.payment_intent as Stripe.PaymentIntent | null;
+  const charge = pi?.latest_charge as Stripe.Charge | null;
+  const refunded = (charge?.amount_refunded ?? 0) / 100;
+  return charged - refunded;
+}
+
 function classifyAndSumSessions(
   sessions: Stripe.Checkout.Session[]
 ): { swipcode: number; studionote: number } {
   let swipcode = 0,
     studionote = 0;
   for (const s of sessions) {
-    const net = (s.amount_total ?? 0) / 100;
-    if (net === 0) continue;
+    const net = sessionNet(s);
+    if (net <= 0) continue;
     for (const line of s.line_items?.data ?? []) {
       const pid = productId(line.price?.product);
       if (!pid) continue;
@@ -163,8 +173,8 @@ export const getStripeCAByYear = unstable_cache(
       }
 
       for (const s of sessions) {
-        const net = (s.amount_total ?? 0) / 100;
-        if (net === 0) continue;
+        const net = sessionNet(s);
+        if (net <= 0) continue;
         const m = new Date(s.created * 1000).getMonth();
         for (const line of s.line_items?.data ?? []) {
           const pid = productId(line.price?.product);
