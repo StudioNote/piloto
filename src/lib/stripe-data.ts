@@ -11,6 +11,8 @@ function productId(
   return typeof p === "string" ? p : p.id;
 }
 
+// ── Invoices (abonnements récurrents) ─────────────────────────────────────────
+
 async function paginateInvoices(
   params: Stripe.InvoiceListParams
 ): Promise<Stripe.Invoice[]> {
@@ -51,17 +53,67 @@ function classifyAndSumInvoices(
   return { swipcode, studionote };
 }
 
+// ── Checkout Sessions mode=payment (one-shots : Swipcode, packs StudioNote) ──
+
+async function paginatePaymentSessions(
+  created: Stripe.RangeQueryParam
+): Promise<Stripe.Checkout.Session[]> {
+  const all: Stripe.Checkout.Session[] = [];
+  let cursor: string | undefined;
+  for (;;) {
+    const page = await stripe.checkout.sessions.list({
+      status: "complete",
+      created,
+      limit: 100,
+      expand: ["data.line_items"],
+      ...(cursor ? { starting_after: cursor } : {}),
+    });
+    // On ne garde que les sessions one-shot — les subscriptions sont déjà
+    // comptées via leurs invoices et on évite ainsi le double-comptage.
+    all.push(...page.data.filter((s) => s.mode === "payment"));
+    if (!page.has_more || page.data.length === 0) break;
+    cursor = page.data.at(-1)!.id;
+  }
+  return all;
+}
+
+function classifyAndSumSessions(
+  sessions: Stripe.Checkout.Session[]
+): { swipcode: number; studionote: number } {
+  let swipcode = 0,
+    studionote = 0;
+  for (const s of sessions) {
+    const net = (s.amount_total ?? 0) / 100;
+    if (net === 0) continue;
+    for (const line of s.line_items?.data ?? []) {
+      const pid = productId(line.price?.product);
+      if (!pid) continue;
+      if (SWIPCODE_PRODUCT_IDS.includes(pid)) { swipcode += net; break; }
+      if (STUDIONOTE_PRODUCT_IDS.includes(pid)) { studionote += net; break; }
+    }
+  }
+  return { swipcode, studionote };
+}
+
+// ── Exports ───────────────────────────────────────────────────────────────────
+
 export const getStripeCAByPeriod = unstable_cache(
   async (
     startTs: number,
     endTs: number
   ): Promise<{ swipcode: number; studionote: number; error?: string }> => {
     try {
-      const invoices = await paginateInvoices({
-        status: "paid",
-        created: { gte: startTs, lte: endTs },
-      });
-      return classifyAndSumInvoices(invoices);
+      const created = { gte: startTs, lte: endTs };
+      const [invoices, sessions] = await Promise.all([
+        paginateInvoices({ status: "paid", created }),
+        paginatePaymentSessions(created),
+      ]);
+      const inv = classifyAndSumInvoices(invoices);
+      const sess = classifyAndSumSessions(sessions);
+      return {
+        swipcode: inv.swipcode + sess.swipcode,
+        studionote: inv.studionote + sess.studionote,
+      };
     } catch (e) {
       return { swipcode: 0, studionote: 0, error: String(e) };
     }
@@ -81,10 +133,12 @@ export const getStripeCAByYear = unstable_cache(
     try {
       const startTs = Math.floor(new Date(year, 0, 1).getTime() / 1000);
       const endTs = Math.floor(new Date(year + 1, 0, 1).getTime() / 1000) - 1;
-      const invoices = await paginateInvoices({
-        status: "paid",
-        created: { gte: startTs, lte: endTs },
-      });
+      const created = { gte: startTs, lte: endTs };
+
+      const [invoices, sessions] = await Promise.all([
+        paginateInvoices({ status: "paid", created }),
+        paginatePaymentSessions(created),
+      ]);
 
       const monthly = {
         swipcode: new Array(12).fill(0) as number[],
@@ -102,6 +156,18 @@ export const getStripeCAByYear = unstable_cache(
 
         for (const line of inv.lines.data) {
           const pid = lineProductId(line);
+          if (!pid) continue;
+          if (SWIPCODE_PRODUCT_IDS.includes(pid)) { monthly.swipcode[m] += net; break; }
+          if (STUDIONOTE_PRODUCT_IDS.includes(pid)) { monthly.studionote[m] += net; break; }
+        }
+      }
+
+      for (const s of sessions) {
+        const net = (s.amount_total ?? 0) / 100;
+        if (net === 0) continue;
+        const m = new Date(s.created * 1000).getMonth();
+        for (const line of s.line_items?.data ?? []) {
+          const pid = productId(line.price?.product);
           if (!pid) continue;
           if (SWIPCODE_PRODUCT_IDS.includes(pid)) { monthly.swipcode[m] += net; break; }
           if (STUDIONOTE_PRODUCT_IDS.includes(pid)) { monthly.studionote[m] += net; break; }
