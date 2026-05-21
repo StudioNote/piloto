@@ -141,6 +141,11 @@ export async function supprimerDocument(formData: FormData) {
 
 type AccessState = { password?: string; error?: string } | null;
 
+function genTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
 export async function creerAccesClient(
   _prev: AccessState,
   formData: FormData
@@ -151,12 +156,7 @@ export async function creerAccesClient(
 
   if (!email) return { error: "Email client manquant." };
 
-  // Génère un mot de passe temporaire lisible (communicable par téléphone)
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const tempPassword = Array.from(
-    { length: 8 },
-    () => chars[Math.floor(Math.random() * chars.length)]
-  ).join("");
+  const tempPassword = genTempPassword();
 
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
@@ -170,6 +170,27 @@ export async function creerAccesClient(
     .update({ auth_user_id: data.user.id })
     .eq("id", clientId);
   if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/admin/sos-ordi/${clientId}`);
+  return { password: tempPassword };
+}
+
+export async function regenererMotDePasse(
+  _prev: AccessState,
+  formData: FormData
+): Promise<AccessState> {
+  await assertAdmin();
+  const authUserId = formData.get("auth_user_id") as string;
+  const clientId = formData.get("client_id") as string;
+
+  if (!authUserId) return { error: "Identifiant d'accès manquant." };
+
+  const tempPassword = genTempPassword();
+
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+    password: tempPassword,
+  });
+  if (error) return { error: error.message };
 
   revalidatePath(`/admin/sos-ordi/${clientId}`);
   return { password: tempPassword };

@@ -120,7 +120,7 @@ export default async function FicheClientPage({
           <CreateAccessButton
             clientId={client.id}
             email={client.email}
-            hasAccess={!!client.auth_user_id}
+            authUserId={client.auth_user_id ?? null}
           />
         </div>
       </div>
