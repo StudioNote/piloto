@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Image from "next/image";
+import { Home } from "lucide-react";
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -26,14 +27,23 @@ export default async function ClientLayout({ children }: { children: React.React
             className="h-12 w-auto"
             priority
           />
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors"
+          <div className="flex items-center gap-4">
+            <a
+              href="https://sosordipf.fr"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-sos-primary border border-sos-primary hover:bg-sos-primary hover:text-white transition-colors"
             >
-              Déconnexion
-            </button>
-          </form>
+              <Home size={18} />
+              Retour au site
+            </a>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="text-sm font-medium text-red-500 hover:text-red-700 transition-colors px-2 py-2"
+              >
+                Déconnexion
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
