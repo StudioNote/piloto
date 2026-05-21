@@ -20,6 +20,29 @@ interface Tranche {
 interface DbSupplement { id: string; label: string; montant: number | string; }
 interface OneTimeSupplement { key: number; label: string; montant: number; }
 
+interface FactureDetail {
+  tranches: Array<{
+    tranche_debut: string;
+    tranche_fin: string;
+    worked_days: number;
+    duration_hours: number;
+    tarif_horaire: number;
+    amount: number;
+  }>;
+  recurring: Array<{ label: string; montant: number; worked_days: number; total: number }>;
+  one_time: Array<{ label: string; montant: number }>;
+  hours_amount: number;
+  recurring_total: number;
+  one_time_total: number;
+  grand_total: number;
+}
+
+interface Facture {
+  montant: number;
+  validee_at: string;
+  detail_json: FactureDetail;
+}
+
 const eur = (n: number, decimals = 0) =>
   n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: decimals });
 
@@ -40,6 +63,8 @@ export function BillingPanel({
   const [toggling, setToggling] = useState<string | null>(null);
   const [otLabel, setOtLabel] = useState("");
   const [otMontant, setOtMontant] = useState("");
+  const [facture, setFacture] = useState<Facture | null>(null);
+  const [validating, setValidating] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -47,7 +72,7 @@ export function BillingPanel({
     const mm = String(month + 1).padStart(2, "0");
     const lastDay = new Date(year, month + 1, 0).getDate();
 
-    const [exclRes, suppRes] = await Promise.all([
+    const [exclRes, suppRes, factureRes] = await Promise.all([
       supabase
         .from("piloto_radio_exclusions")
         .select("date")
@@ -60,10 +85,18 @@ export function BillingPanel({
         .eq("radio_id", radioId)
         .eq("recurrent", true)
         .order("created_at"),
+      supabase
+        .from("piloto_radio_factures")
+        .select("montant, validee_at, detail_json")
+        .eq("radio_id", radioId)
+        .eq("annee", year)
+        .eq("mois", month + 1)
+        .maybeSingle(),
     ]);
 
     setExclusions(new Set((exclRes.data ?? []).map((e: { date: string }) => e.date)));
     setRecurring(suppRes.data ?? []);
+    setFacture(factureRes.data as Facture | null);
     setLoading(false);
   }, [radioId, year, month]);
 
@@ -104,18 +137,14 @@ export function BillingPanel({
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
   const feries = getJoursFeries(year);
 
-  // Union de tous les jours potentiels toutes tranches confondues
   const allPotentialMap: Record<string, true> = {};
   for (const t of tranches) {
     getAllPotentialDays(year, month, t.jours_travailles).forEach((d) => { allPotentialMap[d] = true; });
   }
   const allPotentialUnion = Object.keys(allPotentialMap).sort();
-
-  // Jours travaillés uniques (pour les suppléments récurrents et le résumé)
   const workedUnion = allPotentialUnion.filter((d) => !exclusions.has(d));
   const workedFeriesCount = allPotentialUnion.filter((d) => feries.has(d) && !exclusions.has(d)).length;
 
-  // Calcul par tranche
   const perTranche = tranches.map((t) => {
     const potential = getAllPotentialDays(year, month, t.jours_travailles);
     const worked = potential.filter((d) => !exclusions.has(d));
@@ -131,6 +160,65 @@ export function BillingPanel({
   const grandTotal = hoursAmount + recurringTotal + oneTimeTotal;
   const hasSupplements = recurring.length > 0 || oneTime.length > 0;
   const showDetail = tranches.length > 1 || hasSupplements;
+
+  async function validerMois() {
+    setValidating(true);
+    const supabase = createClient();
+    const detailJson: FactureDetail = {
+      tranches: perTranche.map(({ t, worked, duration, tarif, amount }) => ({
+        tranche_debut: t.tranche_debut.slice(0, 5),
+        tranche_fin: t.tranche_fin.slice(0, 5),
+        worked_days: worked.length,
+        duration_hours: duration,
+        tarif_horaire: tarif,
+        amount,
+      })),
+      recurring: recurring.map((s) => ({
+        label: s.label,
+        montant: Number(s.montant),
+        worked_days: workedUnion.length,
+        total: Number(s.montant) * workedUnion.length,
+      })),
+      one_time: oneTime.map((s) => ({ label: s.label, montant: s.montant })),
+      hours_amount: hoursAmount,
+      recurring_total: recurringTotal,
+      one_time_total: oneTimeTotal,
+      grand_total: grandTotal,
+    };
+    const { data } = await supabase
+      .from("piloto_radio_factures")
+      .insert({
+        radio_id: radioId,
+        annee: year,
+        mois: month + 1,
+        montant: grandTotal,
+        detail_json: detailJson,
+        validee_at: new Date().toISOString(),
+      })
+      .select("montant, validee_at, detail_json")
+      .single();
+    setFacture(data as Facture | null);
+    setValidating(false);
+  }
+
+  async function devaliderMois() {
+    if (
+      !window.confirm(
+        `Dévalider ${MONTHS_FR[month]} ${year} ? Le montant figé sera supprimé et le calcul repassera en projection.`,
+      )
+    )
+      return;
+    setValidating(true);
+    const supabase = createClient();
+    await supabase
+      .from("piloto_radio_factures")
+      .delete()
+      .eq("radio_id", radioId)
+      .eq("annee", year)
+      .eq("mois", month + 1);
+    setFacture(null);
+    setValidating(false);
+  }
 
   return (
     <div>
@@ -163,7 +251,86 @@ export function BillingPanel({
         <p className="text-sm text-gray-400">
           Aucune tranche définie. Ajoutez des tranches horaires pour activer la facturation.
         </p>
+      ) : facture ? (
+        /* ── Vue validée ── */
+        <div>
+          {/* Badge + date */}
+          <div className="flex items-center gap-2.5 mb-5">
+            <span className="bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-green-200">
+              ✓ Validé
+            </span>
+            <span className="text-xs text-gray-400">
+              le{" "}
+              {new Date(facture.validee_at).toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              à{" "}
+              {new Date(facture.validee_at).toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+
+          {/* Montant figé */}
+          <div className="bg-green-50 border border-green-100 rounded-xl p-5 mb-5">
+            <p className="text-xs text-green-500 uppercase tracking-wide mb-1">
+              Montant facturé
+            </p>
+            <p className="text-4xl font-bold text-green-800">{eur(Number(facture.montant), 2)}</p>
+          </div>
+
+          {/* Détail figé */}
+          <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
+            {facture.detail_json.tranches.map((t, i) => (
+              <div key={i} className="flex justify-between text-gray-600">
+                <span>
+                  {t.tranche_debut}–{t.tranche_fin}{" "}
+                  <span className="text-gray-400">
+                    ({t.worked_days}j × {t.duration_hours}h × {t.tarif_horaire} €)
+                  </span>
+                </span>
+                <span>{eur(t.amount, 2)}</span>
+              </div>
+            ))}
+            {facture.detail_json.recurring.map((s, i) => (
+              <div key={i} className="flex justify-between text-gray-600">
+                <span>
+                  {s.label}{" "}
+                  <span className="text-xs text-gray-400">
+                    {eur(s.montant, 2)} × {s.worked_days}j
+                  </span>
+                </span>
+                <span>+{eur(s.total, 2)}</span>
+              </div>
+            ))}
+            {facture.detail_json.one_time.map((s, i) => (
+              <div key={i} className="flex justify-between text-gray-600">
+                <span>
+                  {s.label} <span className="text-xs text-gray-400">ponctuel</span>
+                </span>
+                <span>+{eur(s.montant, 2)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-200">
+              <span>Total</span>
+              <span>{eur(Number(facture.montant), 2)}</span>
+            </div>
+          </div>
+
+          {/* Dévalider */}
+          <button
+            onClick={devaliderMois}
+            disabled={validating}
+            className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+          >
+            Dévalider ce mois →
+          </button>
+        </div>
       ) : (
+        /* ── Vue projection ── */
         <>
           {/* Cartes résumé */}
           <div className="grid grid-cols-3 gap-4 mb-6">
@@ -189,7 +356,9 @@ export function BillingPanel({
               </p>
             </div>
             <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <p className="text-xs text-blue-400 uppercase tracking-wide mb-1">Total à facturer</p>
+              <p className="text-xs text-blue-400 uppercase tracking-wide mb-1">
+                Total · Projection
+              </p>
               <p className="text-3xl font-bold text-blue-700">{eur(grandTotal)}</p>
               <p className="text-xs text-blue-400 mt-1.5">
                 {hasSupplements ? "Heures + suppléments" : "Heures uniquement"}
@@ -197,7 +366,7 @@ export function BillingPanel({
             </div>
           </div>
 
-          {/* Détail par tranche + suppléments */}
+          {/* Détail */}
           {showDetail && (
             <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-2 text-sm">
               {perTranche.map(({ t, worked, duration, tarif, amount }) => (
@@ -343,6 +512,22 @@ export function BillingPanel({
                 + Ajouter
               </button>
             </form>
+          </div>
+
+          {/* Valider ce mois */}
+          <div className="mt-6 pt-5 border-t border-gray-100">
+            <button
+              onClick={validerMois}
+              disabled={validating}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+            >
+              {validating
+                ? "Validation en cours…"
+                : `Valider ce mois — ${eur(grandTotal, 2)}`}
+            </button>
+            <p className="text-center text-xs text-gray-400 mt-2">
+              Le montant sera figé et ne changera plus.
+            </p>
           </div>
         </>
       )}
