@@ -78,13 +78,13 @@ export default async function BuilderPage({
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+        <div className="bg-amber-50 border border-amber-100 rounded-xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-blue-500 uppercase tracking-wide mb-0.5">
+              <p className="text-xs text-amber-600 uppercase tracking-wide mb-0.5">
                 Total Builder
               </p>
-              <p className="text-2xl font-bold text-blue-900">
+              <p className="text-2xl font-bold text-amber-900">
                 {totalMois.toLocaleString("fr-FR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -95,16 +95,16 @@ export default async function BuilderPage({
             <div className="flex items-center gap-2">
               <Link
                 href={`/admin/builder?mois=${prevMonth(currentMois)}&annee=${currentAnnee}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-amber-500 hover:text-amber-800 border border-amber-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 ←
               </Link>
-              <span className="text-sm font-medium text-gray-700 capitalize whitespace-nowrap">
+              <span className="text-sm font-medium text-amber-700 capitalize whitespace-nowrap">
                 {formatMonthLabel(currentMois)}
               </span>
               <Link
                 href={`/admin/builder?mois=${nextMonth(currentMois)}&annee=${currentAnnee}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-amber-500 hover:text-amber-800 border border-amber-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 →
               </Link>
@@ -112,13 +112,13 @@ export default async function BuilderPage({
           </div>
         </div>
 
-        <div className="bg-violet-50 border border-violet-100 rounded-xl p-5">
+        <div className="bg-amber-100 border border-amber-200 rounded-xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-violet-500 uppercase tracking-wide mb-0.5">
+              <p className="text-xs text-amber-700 uppercase tracking-wide mb-0.5">
                 Total de l&apos;année
               </p>
-              <p className="text-2xl font-bold text-violet-900">
+              <p className="text-2xl font-bold text-amber-900">
                 {totalAnnee.toLocaleString("fr-FR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -129,16 +129,16 @@ export default async function BuilderPage({
             <div className="flex items-center gap-2">
               <Link
                 href={`/admin/builder?annee=${currentAnnee - 1}&mois=${currentMois}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-amber-500 hover:text-amber-800 border border-amber-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 ←
               </Link>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-amber-700">
                 {currentAnnee}
               </span>
               <Link
                 href={`/admin/builder?annee=${currentAnnee + 1}&mois=${currentMois}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-amber-500 hover:text-amber-800 border border-amber-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 →
               </Link>
@@ -147,17 +147,18 @@ export default async function BuilderPage({
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-1 h-6 bg-amber-500 rounded-full shrink-0" />
         <h2 className="text-2xl font-bold text-gray-900">Clients</h2>
         <Link
           href="/admin/builder/nouveau"
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="ml-auto bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
         >
           + Nouveau client
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
         <BuilderClientsList initial={clients ?? []} />
       </div>
     </div>

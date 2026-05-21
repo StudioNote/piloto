@@ -39,10 +39,10 @@ export function VoixOffClientsList({ initial }: { initial: Client[] }) {
 
   return (
     <table className="w-full text-sm">
-      <thead className="bg-gray-50 border-b border-gray-100">
+      <thead className="bg-violet-50 border-b border-violet-100">
         <tr>
-          <th className="text-left px-5 py-3.5 font-medium text-gray-500">Client</th>
-          <th className="text-left px-5 py-3.5 font-medium text-gray-500">Téléphone</th>
+          <th className="text-left px-5 py-3.5 font-medium text-violet-600 text-xs">Client</th>
+          <th className="text-left px-5 py-3.5 font-medium text-violet-600 text-xs">Téléphone</th>
           <th className="px-5 py-3.5" />
         </tr>
       </thead>
@@ -63,7 +63,7 @@ export function VoixOffClientsList({ initial }: { initial: Client[] }) {
                   <Link
                     href={`/admin/voix-off/${c.id}`}
                     title="Voir"
-                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-md transition-colors"
                   >
                     <Eye size={16} />
                   </Link>

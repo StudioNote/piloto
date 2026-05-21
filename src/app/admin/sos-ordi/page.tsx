@@ -97,16 +97,16 @@ export default async function SosOrdiPage({
             <div className="flex items-center gap-2">
               <Link
                 href={`/admin/sos-ordi?mois=${prevMonth(currentMois)}&annee=${currentAnnee}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-blue-400 hover:text-blue-700 border border-blue-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 ←
               </Link>
-              <span className="text-sm font-medium text-gray-700 capitalize whitespace-nowrap">
+              <span className="text-sm font-medium text-blue-700 capitalize whitespace-nowrap">
                 {formatMonthLabel(currentMois)}
               </span>
               <Link
                 href={`/admin/sos-ordi?mois=${nextMonth(currentMois)}&annee=${currentAnnee}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-blue-400 hover:text-blue-700 border border-blue-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 →
               </Link>
@@ -115,13 +115,13 @@ export default async function SosOrdiPage({
         </div>
 
         {/* Total de l'année */}
-        <div className="bg-violet-50 border border-violet-100 rounded-xl p-5">
+        <div className="bg-blue-100 border border-blue-200 rounded-xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-violet-500 uppercase tracking-wide mb-0.5">
+              <p className="text-xs text-blue-600 uppercase tracking-wide mb-0.5">
                 Total de l&apos;année
               </p>
-              <p className="text-2xl font-bold text-violet-900">
+              <p className="text-2xl font-bold text-blue-900">
                 {totalAnnee.toLocaleString("fr-FR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -132,16 +132,16 @@ export default async function SosOrdiPage({
             <div className="flex items-center gap-2">
               <Link
                 href={`/admin/sos-ordi?annee=${currentAnnee - 1}&mois=${currentMois}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-blue-400 hover:text-blue-700 border border-blue-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 ←
               </Link>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-blue-700">
                 {currentAnnee}
               </span>
               <Link
                 href={`/admin/sos-ordi?annee=${currentAnnee + 1}&mois=${currentMois}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-blue-400 hover:text-blue-700 border border-blue-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 →
               </Link>
@@ -150,17 +150,18 @@ export default async function SosOrdiPage({
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-1 h-6 bg-blue-500 rounded-full shrink-0" />
         <h2 className="text-2xl font-bold text-gray-900">Clients</h2>
         <Link
           href="/admin/sos-ordi/nouveau"
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
         >
           + Nouveau client
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
         <SosOrdiClientsList initial={clients ?? []} />
       </div>
     </div>

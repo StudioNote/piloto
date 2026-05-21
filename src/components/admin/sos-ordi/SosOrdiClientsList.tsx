@@ -57,12 +57,12 @@ export function SosOrdiClientsList({ initial }: { initial: Client[] }) {
         </div>
       ) : (
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-100">
+          <thead className="bg-blue-50 border-b border-blue-100">
             <tr>
-              <th className="text-left px-5 py-3.5 font-medium text-gray-500">Nom</th>
-              <th className="text-left px-5 py-3.5 font-medium text-gray-500">Prénom</th>
-              <th className="text-left px-5 py-3.5 font-medium text-gray-500">Téléphone</th>
-              <th className="text-left px-5 py-3.5 font-medium text-gray-500">Adresse</th>
+              <th className="text-left px-5 py-3.5 font-medium text-blue-600 text-xs">Nom</th>
+              <th className="text-left px-5 py-3.5 font-medium text-blue-600 text-xs">Prénom</th>
+              <th className="text-left px-5 py-3.5 font-medium text-blue-600 text-xs">Téléphone</th>
+              <th className="text-left px-5 py-3.5 font-medium text-blue-600 text-xs">Adresse</th>
               <th className="px-5 py-3.5" />
             </tr>
           </thead>

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { AdminNav } from "@/components/admin/AdminNav";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -18,56 +19,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/admin" className="text-lg font-bold text-gray-900">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      <nav className="bg-white border-b border-gray-100 shadow-sm px-6 flex items-stretch justify-between">
+        <div className="flex items-stretch gap-0.5">
+          <Link href="/admin" className="flex items-center text-lg font-bold text-gray-900 pr-5 mr-2">
             Piloto
           </Link>
-          <Link
-            href="/admin/cockpit"
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            Cockpit
-          </Link>
-          <Link
-            href="/admin/sos-ordi"
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            SOS Ordi
-          </Link>
-          <Link
-            href="/admin/radio"
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            Radio
-          </Link>
-          <Link
-            href="/admin/voix-off"
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            Voix-Off
-          </Link>
-          <Link
-            href="/admin/builder"
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            Builder
-          </Link>
-          <Link
-            href="/admin/modeles"
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            Modèles
-          </Link>
-          <Link
-            href="/admin/parametres"
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            Paramètres
-          </Link>
+          <AdminNav />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 py-3.5">
           <span className="text-sm text-gray-400">{user.email}</span>
           <form action={signOut}>
             <button

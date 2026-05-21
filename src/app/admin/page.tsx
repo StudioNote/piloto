@@ -1,5 +1,90 @@
 import Link from "next/link";
-import { Mic, Hammer, TrendingUp, FileText, Settings } from "lucide-react";
+import { Mic, Hammer, TrendingUp, FileText, Settings, Radio } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+interface ModuleItem {
+  href: string;
+  label: string;
+  desc: string;
+  icon: LucideIcon | null;
+  dot: string;
+  iconHover: string;
+  textHover: string;
+  borderHover: string;
+}
+
+const modules: ModuleItem[] = [
+  {
+    href: "/admin/cockpit",
+    label: "Cockpit",
+    desc: "CA multi-activités en temps réel",
+    icon: TrendingUp,
+    dot: "bg-slate-700",
+    iconHover: "group-hover:text-slate-700",
+    textHover: "group-hover:text-slate-800",
+    borderHover: "hover:border-slate-200",
+  },
+  {
+    href: "/admin/sos-ordi",
+    label: "SOS Ordi",
+    desc: "Clients & interventions",
+    icon: null,
+    dot: "bg-blue-500",
+    iconHover: "",
+    textHover: "group-hover:text-blue-600",
+    borderHover: "hover:border-blue-200",
+  },
+  {
+    href: "/admin/radio",
+    label: "Radio",
+    desc: "Radios & facturation mensuelle",
+    icon: Radio,
+    dot: "bg-emerald-500",
+    iconHover: "group-hover:text-emerald-600",
+    textHover: "group-hover:text-emerald-600",
+    borderHover: "hover:border-emerald-200",
+  },
+  {
+    href: "/admin/voix-off",
+    label: "Voix-Off",
+    desc: "Prestations de voix-off",
+    icon: Mic,
+    dot: "bg-violet-500",
+    iconHover: "group-hover:text-violet-500",
+    textHover: "group-hover:text-violet-600",
+    borderHover: "hover:border-violet-200",
+  },
+  {
+    href: "/admin/builder",
+    label: "Builder",
+    desc: "Clients & projets web",
+    icon: Hammer,
+    dot: "bg-amber-500",
+    iconHover: "group-hover:text-amber-500",
+    textHover: "group-hover:text-amber-600",
+    borderHover: "hover:border-amber-200",
+  },
+  {
+    href: "/admin/modeles",
+    label: "Modèles",
+    desc: "Bibliothèque de documents réutilisables",
+    icon: FileText,
+    dot: "bg-teal-500",
+    iconHover: "group-hover:text-teal-500",
+    textHover: "group-hover:text-teal-600",
+    borderHover: "hover:border-teal-200",
+  },
+  {
+    href: "/admin/parametres",
+    label: "Paramètres",
+    desc: "Sécurité & infos professionnelles",
+    icon: Settings,
+    dot: "bg-slate-400",
+    iconHover: "group-hover:text-slate-500",
+    textHover: "group-hover:text-slate-600",
+    borderHover: "hover:border-slate-200",
+  },
+];
 
 export default function AdminPage() {
   return (
@@ -7,84 +92,27 @@ export default function AdminPage() {
       <h2 className="text-3xl font-bold text-gray-900 mb-2">Bienvenue sur Piloto</h2>
       <p className="text-gray-500 mb-10">Tableau de bord administrateur.</p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Link
-          href="/admin/cockpit"
-          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
-              Cockpit
-            </p>
-          </div>
-          <p className="text-xs text-gray-400">CA multi-activités en temps réel</p>
-        </Link>
-        <Link
-          href="/admin/sos-ordi"
-          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
-        >
-          <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
-            SOS Ordi
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Clients &amp; interventions</p>
-        </Link>
-        <Link
-          href="/admin/radio"
-          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
-        >
-          <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
-            Radio
-          </p>
-          <p className="text-xs text-gray-400 mt-1">Radios &amp; facturation mensuelle</p>
-        </Link>
-        <Link
-          href="/admin/voix-off"
-          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <Mic size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
-              Voix-Off
-            </p>
-          </div>
-          <p className="text-xs text-gray-400">Prestations de voix-off</p>
-        </Link>
-        <Link
-          href="/admin/builder"
-          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <Hammer size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
-              Builder
-            </p>
-          </div>
-          <p className="text-xs text-gray-400">Clients &amp; projets web</p>
-        </Link>
-        <Link
-          href="/admin/modeles"
-          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <FileText size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
-              Modèles
-            </p>
-          </div>
-          <p className="text-xs text-gray-400">Bibliothèque de documents réutilisables</p>
-        </Link>
-        <Link
-          href="/admin/parametres"
-          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <Settings size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
-            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
-              Paramètres
-            </p>
-          </div>
-          <p className="text-xs text-gray-400">Sécurité &amp; infos professionnelles</p>
-        </Link>
+        {modules.map((m) => {
+          const Icon = m.icon;
+          return (
+            <Link
+              key={m.href}
+              href={m.href}
+              className={`bg-white rounded-xl border border-gray-100 p-6 ${m.borderHover} hover:shadow-sm transition-all group`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${m.dot}`} />
+                {Icon && (
+                  <Icon size={15} className={`text-gray-400 transition-colors ${m.iconHover}`} />
+                )}
+                <p className={`font-medium text-gray-800 transition-colors ${m.textHover}`}>
+                  {m.label}
+                </p>
+              </div>
+              <p className="text-xs text-gray-400">{m.desc}</p>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

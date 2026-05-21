@@ -47,12 +47,13 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-1 h-7 bg-teal-500 rounded-full shrink-0" />
         <h1 className="text-2xl font-bold text-gray-900">Modèles</h1>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="ml-auto inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
         >
           <Upload size={15} />
           Ajouter un modèle
@@ -64,7 +65,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
         <form
           ref={formRef}
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl border border-dashed border-blue-200 p-6 mb-6 space-y-4"
+          className="bg-white rounded-xl border border-dashed border-teal-200 p-6 mb-6 space-y-4"
         >
           <p className="text-sm font-semibold text-gray-800">Nouveau modèle</p>
 
@@ -77,7 +78,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
                 type="text"
                 name="nom"
                 required
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
             <div>
@@ -88,7 +89,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
                 type="text"
                 name="categorie"
                 placeholder="Ex : Formation, Devis, Contrat…"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
           </div>
@@ -100,7 +101,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
             <input
               type="text"
               name="description"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
 
@@ -113,7 +114,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
               name="fichier"
               required
               accept=".pdf,.doc,.docx,.odt,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png"
-              className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
             />
           </div>
 
@@ -125,7 +126,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
             <button
               type="submit"
               disabled={pending}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+              className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
             >
               {pending ? "Envoi en cours…" : "Ajouter"}
             </button>
@@ -150,15 +151,15 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">Nom</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 hidden sm:table-cell">
+              <tr className="border-b border-teal-100 bg-teal-50">
+                <th className="text-left px-5 py-3 text-xs font-medium text-teal-600">Nom</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-teal-600 hidden sm:table-cell">
                   Catégorie
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 hidden md:table-cell">
+                <th className="text-left px-5 py-3 text-xs font-medium text-teal-600 hidden md:table-cell">
                   Date
                 </th>
                 <th className="px-5 py-3" />
@@ -166,10 +167,10 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {modeles.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={m.id} className="hover:bg-teal-50/40 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <FileText size={15} className="text-gray-300 shrink-0" />
+                      <FileText size={15} className="text-teal-300 shrink-0" />
                       <div>
                         <p className="font-medium text-gray-800">{m.nom}</p>
                         {m.description && (
@@ -180,7 +181,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
                   </td>
                   <td className="px-5 py-4 hidden sm:table-cell">
                     {m.categorie ? (
-                      <span className="inline-block text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md">
+                      <span className="inline-block text-xs bg-teal-50 text-teal-700 px-2 py-1 rounded-md">
                         {m.categorie}
                       </span>
                     ) : (
@@ -194,7 +195,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
                     <div className="flex items-center justify-end gap-2">
                       <a
                         href={`/admin/modeles/download/${m.id}`}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                        className="p-1.5 text-gray-400 hover:text-teal-600 transition-colors"
                         title="Télécharger"
                       >
                         <Download size={15} />

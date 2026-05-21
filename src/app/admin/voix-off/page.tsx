@@ -78,13 +78,13 @@ export default async function VoixOffPage({
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+        <div className="bg-violet-50 border border-violet-100 rounded-xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-blue-500 uppercase tracking-wide mb-0.5">
+              <p className="text-xs text-violet-500 uppercase tracking-wide mb-0.5">
                 Total Voix-Off
               </p>
-              <p className="text-2xl font-bold text-blue-900">
+              <p className="text-2xl font-bold text-violet-900">
                 {totalMois.toLocaleString("fr-FR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -95,16 +95,16 @@ export default async function VoixOffPage({
             <div className="flex items-center gap-2">
               <Link
                 href={`/admin/voix-off?mois=${prevMonth(currentMois)}&annee=${currentAnnee}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-violet-400 hover:text-violet-700 border border-violet-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 ←
               </Link>
-              <span className="text-sm font-medium text-gray-700 capitalize whitespace-nowrap">
+              <span className="text-sm font-medium text-violet-700 capitalize whitespace-nowrap">
                 {formatMonthLabel(currentMois)}
               </span>
               <Link
                 href={`/admin/voix-off?mois=${nextMonth(currentMois)}&annee=${currentAnnee}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-violet-400 hover:text-violet-700 border border-violet-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 →
               </Link>
@@ -112,10 +112,10 @@ export default async function VoixOffPage({
           </div>
         </div>
 
-        <div className="bg-violet-50 border border-violet-100 rounded-xl p-5">
+        <div className="bg-violet-100 border border-violet-200 rounded-xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs text-violet-500 uppercase tracking-wide mb-0.5">
+              <p className="text-xs text-violet-600 uppercase tracking-wide mb-0.5">
                 Total de l&apos;année
               </p>
               <p className="text-2xl font-bold text-violet-900">
@@ -129,16 +129,16 @@ export default async function VoixOffPage({
             <div className="flex items-center gap-2">
               <Link
                 href={`/admin/voix-off?annee=${currentAnnee - 1}&mois=${currentMois}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-violet-400 hover:text-violet-700 border border-violet-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 ←
               </Link>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium text-violet-700">
                 {currentAnnee}
               </span>
               <Link
                 href={`/admin/voix-off?annee=${currentAnnee + 1}&mois=${currentMois}`}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm text-violet-400 hover:text-violet-700 border border-violet-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
               >
                 →
               </Link>
@@ -147,17 +147,18 @@ export default async function VoixOffPage({
         </div>
       </div>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-1 h-6 bg-violet-500 rounded-full shrink-0" />
         <h2 className="text-2xl font-bold text-gray-900">Clients</h2>
         <Link
           href="/admin/voix-off/nouveau"
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+          className="ml-auto bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
         >
           + Nouveau client
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
         <VoixOffClientsList initial={clients ?? []} />
       </div>
     </div>

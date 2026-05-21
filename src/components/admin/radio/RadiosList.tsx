@@ -35,11 +35,11 @@ export function RadiosList({ initial }: { initial: Radio[] }) {
 
   return (
     <table className="w-full text-sm">
-      <thead className="bg-gray-50 border-b border-gray-100">
+      <thead className="bg-emerald-50 border-b border-emerald-100">
         <tr>
-          <th className="text-left px-5 py-3.5 font-medium text-gray-500">Radio</th>
-          <th className="text-left px-5 py-3.5 font-medium text-gray-500">Contact</th>
-          <th className="text-left px-5 py-3.5 font-medium text-gray-500">Téléphone</th>
+          <th className="text-left px-5 py-3.5 font-medium text-emerald-600 text-xs">Radio</th>
+          <th className="text-left px-5 py-3.5 font-medium text-emerald-600 text-xs">Contact</th>
+          <th className="text-left px-5 py-3.5 font-medium text-emerald-600 text-xs">Téléphone</th>
           <th className="px-5 py-3.5" />
         </tr>
       </thead>
@@ -54,7 +54,7 @@ export function RadiosList({ initial }: { initial: Radio[] }) {
                 <Link
                   href={`/admin/radio/${r.id}`}
                   title="Voir"
-                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
                 >
                   <Eye size={16} />
                 </Link>

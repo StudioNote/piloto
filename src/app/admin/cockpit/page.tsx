@@ -269,7 +269,10 @@ export default async function CockpitPage({
 
       {/* Title + toggle */}
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Cockpit financier</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-7 bg-slate-700 rounded-full shrink-0" />
+          <h2 className="text-2xl font-bold text-gray-900">Cockpit financier</h2>
+        </div>
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
           <Link
             href={`/admin/cockpit?vue=mensuelle&mois=${currentMois}&annee=${currentAnnee}`}

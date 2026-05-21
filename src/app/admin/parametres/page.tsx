@@ -19,10 +19,13 @@ export default async function ParametresPage({
     <div className="max-w-2xl mx-auto px-6 py-10">
       <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Paramètres" }]} />
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Paramètres</h1>
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-1 h-7 bg-slate-400 rounded-full shrink-0" />
+        <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+      </div>
 
       {/* Sécurité */}
-      <section className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
         <h2 className="text-base font-semibold text-gray-800 mb-5">
           Sécurité — Changer mon mot de passe
         </h2>
@@ -59,7 +62,7 @@ export default async function ParametresPage({
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
             />
           </div>
           <div>
@@ -70,12 +73,12 @@ export default async function ParametresPage({
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
             />
           </div>
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
           >
             Mettre à jour le mot de passe
           </button>
@@ -83,7 +86,7 @@ export default async function ParametresPage({
       </section>
 
       {/* Infos professionnelles */}
-      <section className="bg-white rounded-xl border border-gray-100 p-6">
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         <h2 className="text-base font-semibold text-gray-800 mb-5">Infos professionnelles</h2>
         <p className="text-xs text-gray-400 mb-5">
           Ces informations seront utilisées pour la facturation.
@@ -110,7 +113,7 @@ export default async function ParametresPage({
                 type="text"
                 name="raison_sociale"
                 defaultValue={params?.raison_sociale ?? ""}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </div>
             <div>
@@ -119,7 +122,7 @@ export default async function ParametresPage({
                 type="text"
                 name="siret"
                 defaultValue={params?.siret ?? ""}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </div>
           </div>
@@ -129,7 +132,7 @@ export default async function ParametresPage({
               type="text"
               name="adresse"
               defaultValue={params?.adresse ?? ""}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
             />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -139,7 +142,7 @@ export default async function ParametresPage({
                 type="tel"
                 name="telephone"
                 defaultValue={params?.telephone ?? ""}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </div>
             <div>
@@ -148,7 +151,7 @@ export default async function ParametresPage({
                 type="email"
                 name="email"
                 defaultValue={params?.email ?? ""}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
               />
             </div>
           </div>
@@ -161,12 +164,12 @@ export default async function ParametresPage({
               name="mentions"
               rows={4}
               defaultValue={params?.mentions ?? ""}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 resize-none"
             />
           </div>
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+            className="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
           >
             Sauvegarder
           </button>
