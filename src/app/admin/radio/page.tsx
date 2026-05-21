@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
+import { RadiosList } from "@/components/admin/radio/RadiosList";
 import Link from "next/link";
 
 export default async function RadioPage({
@@ -78,47 +79,7 @@ export default async function RadioPage({
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        {!radios || radios.length === 0 ? (
-          <div className="p-16 text-center text-sm text-gray-400">
-            Aucune radio enregistrée.
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Radio</th>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Contact</th>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Téléphone</th>
-                <th className="px-5 py-3.5" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {radios.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-4 font-medium text-gray-800">{r.nom_radio}</td>
-                  <td className="px-5 py-4 text-gray-600">{r.nom_contact ?? "—"}</td>
-                  <td className="px-5 py-4 text-gray-500">{r.telephone ?? "—"}</td>
-                  <td className="px-5 py-4">
-                    <div className="flex justify-end gap-3">
-                      <Link
-                        href={`/admin/radio/${r.id}`}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Voir
-                      </Link>
-                      <Link
-                        href={`/admin/radio/${r.id}/modifier`}
-                        className="text-gray-500 hover:text-gray-700 font-medium"
-                      >
-                        Modifier
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <RadiosList initial={radios ?? []} />
       </div>
     </div>
   );
