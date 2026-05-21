@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 interface Radio {
@@ -49,24 +50,27 @@ export function RadiosList({ initial }: { initial: Radio[] }) {
             <td className="px-5 py-4 text-gray-600">{r.nom_contact ?? "—"}</td>
             <td className="px-5 py-4 text-gray-500">{r.telephone ?? "—"}</td>
             <td className="px-5 py-4">
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-1">
                 <Link
                   href={`/admin/radio/${r.id}`}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  title="Voir"
+                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                 >
-                  Voir
+                  <Eye size={16} />
                 </Link>
                 <Link
                   href={`/admin/radio/${r.id}/modifier`}
-                  className="text-gray-500 hover:text-gray-700 font-medium"
+                  title="Modifier"
+                  className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                 >
-                  Modifier
+                  <Pencil size={16} />
                 </Link>
                 <button
                   onClick={() => handleDelete(r.id)}
-                  className="text-red-400 hover:text-red-600 font-medium transition-colors"
+                  title="Supprimer"
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 >
-                  Supprimer
+                  <Trash2 size={16} />
                 </button>
               </div>
             </td>

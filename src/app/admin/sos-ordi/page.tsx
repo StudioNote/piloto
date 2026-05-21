@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
+import { Eye, Pencil } from "lucide-react";
 import Link from "next/link";
 
 function prevMonth(mois: string): string {
@@ -185,18 +186,20 @@ export default async function SosOrdiPage({
                     {client.adresse ?? "—"}
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex justify-end gap-3">
+                    <div className="flex justify-end gap-1">
                       <Link
                         href={`/admin/sos-ordi/${client.id}`}
-                        className="text-blue-600 hover:text-blue-700 font-medium"
+                        title="Voir"
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       >
-                        Voir
+                        <Eye size={16} />
                       </Link>
                       <Link
                         href={`/admin/sos-ordi/${client.id}/modifier`}
-                        className="text-gray-500 hover:text-gray-700 font-medium"
+                        title="Modifier"
+                        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                       >
-                        Modifier
+                        <Pencil size={16} />
                       </Link>
                     </div>
                   </td>

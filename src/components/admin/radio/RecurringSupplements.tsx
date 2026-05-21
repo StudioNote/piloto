@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Trash2 } from "lucide-react";
 
 interface Supplement {
   id: string;
@@ -79,9 +80,10 @@ export function RecurringSupplements({ radioId }: { radioId: string }) {
                 </span>
                 <button
                   onClick={() => handleDelete(s.id)}
-                  className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                  title="Supprimer"
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                 >
-                  Supprimer
+                  <Trash2 size={16} />
                 </button>
               </div>
             </div>

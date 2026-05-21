@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 
 interface Remplacement {
   id: string;
@@ -276,9 +277,10 @@ export function RadioRemplacements({ radioId }: { radioId: string }) {
                   <span className="font-semibold text-gray-900">{eur(a)}</span>
                   <button
                     onClick={() => handleDelete(r.id)}
-                    className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                    title="Supprimer"
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                   >
-                    Supprimer
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>

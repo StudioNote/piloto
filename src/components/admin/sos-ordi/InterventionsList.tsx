@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 
 interface Intervention {
   id: string;
@@ -84,9 +85,10 @@ export function InterventionsList({ initial }: { initial: Intervention[] }) {
               </span>
               <button
                 onClick={() => handleDelete(intervention.id)}
-                className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                title="Supprimer"
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
               >
-                Supprimer
+                <Trash2 size={16} />
               </button>
             </div>
           </div>

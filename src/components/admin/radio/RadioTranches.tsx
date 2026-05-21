@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 
 const JOURS = [
   { value: "lundi", label: "Lun" },
@@ -221,9 +222,10 @@ export function RadioTranches({
               </div>
               <button
                 onClick={() => handleDelete(t.id)}
-                className="text-xs text-red-400 hover:text-red-600 transition-colors ml-4 shrink-0"
+                title="Supprimer"
+                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors ml-2 shrink-0"
               >
-                Supprimer
+                <Trash2 size={16} />
               </button>
             </div>
           ))}
