@@ -19,6 +19,14 @@ interface Tranche {
 }
 interface DbSupplement { id: string; label: string; montant: number | string; }
 interface OneTimeSupplement { key: number; label: string; montant: number; }
+interface DbRemplacement {
+  id: string;
+  date_debut: string;
+  date_fin: string;
+  tranche_debut: string;
+  tranche_fin: string;
+  tarif_horaire: number | string;
+}
 
 interface FactureDetail {
   tranches: Array<{
@@ -31,9 +39,17 @@ interface FactureDetail {
   }>;
   recurring: Array<{ label: string; montant: number; worked_days: number; total: number }>;
   one_time: Array<{ label: string; montant: number }>;
+  remplacements: Array<{
+    label: string;
+    days_in_month: number;
+    duration_hours: number;
+    tarif_horaire: number;
+    amount: number;
+  }>;
   hours_amount: number;
   recurring_total: number;
   one_time_total: number;
+  remplacements_total: number;
   grand_total: number;
 }
 
@@ -58,6 +74,7 @@ export function BillingPanel({
   const [month, setMonth] = useState(now.getMonth());
   const [exclusions, setExclusions] = useState<Set<string>>(new Set());
   const [recurring, setRecurring] = useState<DbSupplement[]>([]);
+  const [remplacements, setRemplacements] = useState<DbRemplacement[]>([]);
   const [oneTime, setOneTime] = useState<OneTimeSupplement[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -71,20 +88,28 @@ export function BillingPanel({
     const supabase = createClient();
     const mm = String(month + 1).padStart(2, "0");
     const lastDay = new Date(year, month + 1, 0).getDate();
+    const monthStart = `${year}-${mm}-01`;
+    const monthEnd = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
 
-    const [exclRes, suppRes, factureRes] = await Promise.all([
+    const [exclRes, suppRes, remplRes, factureRes] = await Promise.all([
       supabase
         .from("piloto_radio_exclusions")
         .select("date")
         .eq("radio_id", radioId)
-        .gte("date", `${year}-${mm}-01`)
-        .lte("date", `${year}-${mm}-${String(lastDay).padStart(2, "0")}`),
+        .gte("date", monthStart)
+        .lte("date", monthEnd),
       supabase
         .from("piloto_radio_supplements")
         .select("id, label, montant")
         .eq("radio_id", radioId)
         .eq("recurrent", true)
         .order("created_at"),
+      supabase
+        .from("piloto_radio_remplacements")
+        .select("id, date_debut, date_fin, tranche_debut, tranche_fin, tarif_horaire")
+        .eq("radio_id", radioId)
+        .lte("date_debut", monthEnd)
+        .gte("date_fin", monthStart),
       supabase
         .from("piloto_radio_factures")
         .select("montant, validee_at, detail_json")
@@ -96,6 +121,7 @@ export function BillingPanel({
 
     setExclusions(new Set((exclRes.data ?? []).map((e: { date: string }) => e.date)));
     setRecurring(suppRes.data ?? []);
+    setRemplacements(remplRes.data ?? []);
     setFacture(factureRes.data as Facture | null);
     setLoading(false);
   }, [radioId, year, month]);
@@ -137,6 +163,7 @@ export function BillingPanel({
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
   const feries = getJoursFeries(year);
 
+  // Tranches récurrentes
   const allPotentialMap: Record<string, true> = {};
   for (const t of tranches) {
     getAllPotentialDays(year, month, t.jours_travailles).forEach((d) => { allPotentialMap[d] = true; });
@@ -157,9 +184,46 @@ export function BillingPanel({
   const hoursAmount = perTranche.reduce((sum, p) => sum + p.amount, 0);
   const recurringTotal = recurring.reduce((sum, s) => sum + Number(s.montant) * workedUnion.length, 0);
   const oneTimeTotal = oneTime.reduce((sum, s) => sum + s.montant, 0);
-  const grandTotal = hoursAmount + recurringTotal + oneTimeTotal;
+
+  // Remplacements du mois
+  const mm = String(month + 1).padStart(2, "0");
+  const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+  const monthStart = `${year}-${mm}-01`;
+  const monthEnd = `${year}-${mm}-${String(lastDayOfMonth).padStart(2, "0")}`;
+
+  const perRemplacement = remplacements.map((r) => {
+    const start = r.date_debut > monthStart ? r.date_debut : monthStart;
+    const end = r.date_fin < monthEnd ? r.date_fin : monthEnd;
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const days = start <= end
+      ? Math.round(
+          (new Date(end + "T00:00:00").getTime() - new Date(start + "T00:00:00").getTime()) / msPerDay
+        ) + 1
+      : 0;
+    const duration = getDurationHours(r.tranche_debut, r.tranche_fin);
+    const tarif = Number(r.tarif_horaire);
+    const amount = days * duration * tarif;
+    const startDay = new Date(start + "T00:00:00").getDate();
+    const endDay = new Date(end + "T00:00:00").getDate();
+    const label =
+      startDay === endDay
+        ? `Remplacement ${startDay} ${MONTHS_FR[month].toLowerCase()}`
+        : `Remplacement ${startDay}–${endDay} ${MONTHS_FR[month].toLowerCase()}`;
+    return { r, start, end, days, duration, tarif, amount, label };
+  });
+
+  const remplacementsTotal = perRemplacement.reduce((sum, p) => sum + p.amount, 0);
+  const grandTotal = hoursAmount + recurringTotal + oneTimeTotal + remplacementsTotal;
+
   const hasSupplements = recurring.length > 0 || oneTime.length > 0;
-  const showDetail = tranches.length > 1 || hasSupplements;
+  const hasContent = tranches.length > 0 || remplacements.length > 0 || oneTime.length > 0;
+  const showDetail = tranches.length > 1 || hasSupplements || remplacements.length > 0;
+
+  const totalLabel = [
+    tranches.length > 0 && "heures",
+    hasSupplements && "suppléments",
+    remplacements.length > 0 && "remplacements",
+  ].filter(Boolean).join(" + ") || "—";
 
   async function validerMois() {
     setValidating(true);
@@ -180,9 +244,17 @@ export function BillingPanel({
         total: Number(s.montant) * workedUnion.length,
       })),
       one_time: oneTime.map((s) => ({ label: s.label, montant: s.montant })),
+      remplacements: perRemplacement.map(({ label, days, duration, tarif, amount }) => ({
+        label,
+        days_in_month: days,
+        duration_hours: duration,
+        tarif_horaire: tarif,
+        amount,
+      })),
       hours_amount: hoursAmount,
       recurring_total: recurringTotal,
       one_time_total: oneTimeTotal,
+      remplacements_total: remplacementsTotal,
       grand_total: grandTotal,
     };
     const { data } = await supabase
@@ -247,14 +319,13 @@ export function BillingPanel({
 
       {loading ? (
         <p className="text-sm text-gray-400">Chargement…</p>
-      ) : tranches.length === 0 ? (
+      ) : !hasContent ? (
         <p className="text-sm text-gray-400">
-          Aucune tranche définie. Ajoutez des tranches horaires pour activer la facturation.
+          Aucune facturation ce mois — ni tranche récurrente ni remplacement.
         </p>
       ) : facture ? (
         /* ── Vue validée ── */
         <div>
-          {/* Badge + date */}
           <div className="flex items-center gap-2.5 mb-5">
             <span className="bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-green-200">
               ✓ Validé
@@ -274,15 +345,11 @@ export function BillingPanel({
             </span>
           </div>
 
-          {/* Montant figé */}
           <div className="bg-green-50 border border-green-100 rounded-xl p-5 mb-5">
-            <p className="text-xs text-green-500 uppercase tracking-wide mb-1">
-              Montant facturé
-            </p>
+            <p className="text-xs text-green-500 uppercase tracking-wide mb-1">Montant facturé</p>
             <p className="text-4xl font-bold text-green-800">{eur(Number(facture.montant), 2)}</p>
           </div>
 
-          {/* Détail figé */}
           <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
             {facture.detail_json.tranches.map((t, i) => (
               <div key={i} className="flex justify-between text-gray-600">
@@ -306,6 +373,17 @@ export function BillingPanel({
                 <span>+{eur(s.total, 2)}</span>
               </div>
             ))}
+            {facture.detail_json.remplacements?.map((r, i) => (
+              <div key={i} className="flex justify-between text-gray-600">
+                <span>
+                  {r.label}{" "}
+                  <span className="text-gray-400">
+                    ({r.days_in_month}j × {r.duration_hours}h × {r.tarif_horaire} €)
+                  </span>
+                </span>
+                <span>{eur(r.amount, 2)}</span>
+              </div>
+            ))}
             {facture.detail_json.one_time.map((s, i) => (
               <div key={i} className="flex justify-between text-gray-600">
                 <span>
@@ -320,7 +398,6 @@ export function BillingPanel({
             </div>
           </div>
 
-          {/* Dévalider */}
           <button
             onClick={devaliderMois}
             disabled={validating}
@@ -333,38 +410,42 @@ export function BillingPanel({
         /* ── Vue projection ── */
         <>
           {/* Cartes résumé */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Jours travaillés</p>
-              <p className="text-3xl font-bold text-gray-900">{workedUnion.length}</p>
-              <p className="text-xs text-gray-400 mt-1.5">
-                {workedFeriesCount > 0 && `★ ${workedFeriesCount} féri${workedFeriesCount > 1 ? "és" : "é"}`}
-                {workedFeriesCount > 0 && exclusions.size > 0 && " · "}
-                {exclusions.size > 0 && `${exclusions.size} exclu${exclusions.size > 1 ? "s" : ""}`}
-                {workedFeriesCount === 0 && exclusions.size === 0 && "Aucune exclusion"}
-              </p>
+          {tranches.length > 0 ? (
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Jours travaillés</p>
+                <p className="text-3xl font-bold text-gray-900">{workedUnion.length}</p>
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {workedFeriesCount > 0 && `★ ${workedFeriesCount} féri${workedFeriesCount > 1 ? "és" : "é"}`}
+                  {workedFeriesCount > 0 && exclusions.size > 0 && " · "}
+                  {exclusions.size > 0 && `${exclusions.size} exclu${exclusions.size > 1 ? "s" : ""}`}
+                  {workedFeriesCount === 0 && exclusions.size === 0 && "Aucune exclusion"}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-4">
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Heures totales</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h
+                </p>
+                <p className="text-xs text-gray-400 mt-1.5">
+                  {tranches.length === 1
+                    ? `${tranches[0].tranche_debut.slice(0, 5)}–${tranches[0].tranche_fin.slice(0, 5)} · ${getDurationHours(tranches[0].tranche_debut, tranches[0].tranche_fin)}h/j`
+                    : `${tranches.length} tranches`}
+                </p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                <p className="text-xs text-blue-400 uppercase tracking-wide mb-1">Total · Projection</p>
+                <p className="text-3xl font-bold text-blue-700">{eur(grandTotal)}</p>
+                <p className="text-xs text-blue-400 mt-1.5 capitalize">{totalLabel}</p>
+              </div>
             </div>
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Heures totales</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h
-              </p>
-              <p className="text-xs text-gray-400 mt-1.5">
-                {tranches.length === 1
-                  ? `${tranches[0].tranche_debut.slice(0, 5)}–${tranches[0].tranche_fin.slice(0, 5)} · ${getDurationHours(tranches[0].tranche_debut, tranches[0].tranche_fin)}h/j`
-                  : `${tranches.length} tranches`}
-              </p>
-            </div>
-            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-              <p className="text-xs text-blue-400 uppercase tracking-wide mb-1">
-                Total · Projection
-              </p>
+          ) : (
+            <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 mb-6">
+              <p className="text-xs text-blue-400 uppercase tracking-wide mb-1">Total · Projection</p>
               <p className="text-3xl font-bold text-blue-700">{eur(grandTotal)}</p>
-              <p className="text-xs text-blue-400 mt-1.5">
-                {hasSupplements ? "Heures + suppléments" : "Heures uniquement"}
-              </p>
+              <p className="text-xs text-blue-400 mt-1.5 capitalize">{totalLabel}</p>
             </div>
-          </div>
+          )}
 
           {/* Détail */}
           {showDetail && (
@@ -391,6 +472,17 @@ export function BillingPanel({
                   <span>+{eur(Number(s.montant) * workedUnion.length, 2)}</span>
                 </div>
               ))}
+              {perRemplacement.map(({ r, days, duration, tarif, amount, label }) => (
+                <div key={r.id} className="flex justify-between text-gray-600">
+                  <span>
+                    {label}{" "}
+                    <span className="text-gray-400">
+                      ({days}j × {duration}h × {tarif} €)
+                    </span>
+                  </span>
+                  <span>{eur(amount, 2)}</span>
+                </div>
+              ))}
               {oneTime.map((s) => (
                 <div key={s.key} className="flex justify-between text-gray-600">
                   <span>
@@ -406,63 +498,65 @@ export function BillingPanel({
             </div>
           )}
 
-          {/* Chips jours */}
-          <div className="mb-6">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">
-              Jours prévus — cliquer pour exclure / réintégrer
-            </p>
-            {allPotentialUnion.length === 0 ? (
-              <p className="text-sm text-gray-400">Aucun jour prévu ce mois-ci.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {allPotentialUnion.map((dateStr) => {
-                  const isFerie = feries.has(dateStr);
-                  const isExcluded = exclusions.has(dateStr);
-                  const d = new Date(dateStr + "T00:00:00");
-                  const dayLabel = `${DAYS_FR[d.getDay()]} ${d.getDate()}`;
-                  return (
-                    <button
-                      key={dateStr}
-                      onClick={() => toggleExclusion(dateStr)}
-                      disabled={toggling === dateStr}
-                      title={
-                        isFerie
-                          ? isExcluded
-                            ? "Férié — exclu (cliquer pour travailler)"
-                            : "Férié — travaillé (cliquer pour exclure)"
-                          : isExcluded
-                          ? "Exclu (cliquer pour réintégrer)"
-                          : "Cliquer pour exclure"
-                      }
-                      className={`text-xs px-2.5 py-1 rounded-full border transition-all disabled:opacity-50 ${
-                        isExcluded
-                          ? "bg-gray-100 text-gray-400 border-gray-200 line-through"
-                          : isFerie
-                          ? "bg-green-50 text-green-700 border-green-400 ring-1 ring-green-300 hover:bg-green-100"
-                          : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                      }`}
-                    >
-                      {isFerie && !isExcluded ? `★ ${dayLabel}` : dayLabel}
-                    </button>
-                  );
-                })}
+          {/* Chips jours — uniquement si tranches récurrentes */}
+          {tranches.length > 0 && (
+            <div className="mb-6">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">
+                Jours prévus — cliquer pour exclure / réintégrer
+              </p>
+              {allPotentialUnion.length === 0 ? (
+                <p className="text-sm text-gray-400">Aucun jour prévu ce mois-ci.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {allPotentialUnion.map((dateStr) => {
+                    const isFerie = feries.has(dateStr);
+                    const isExcluded = exclusions.has(dateStr);
+                    const d = new Date(dateStr + "T00:00:00");
+                    const dayLabel = `${DAYS_FR[d.getDay()]} ${d.getDate()}`;
+                    return (
+                      <button
+                        key={dateStr}
+                        onClick={() => toggleExclusion(dateStr)}
+                        disabled={toggling === dateStr}
+                        title={
+                          isFerie
+                            ? isExcluded
+                              ? "Férié — exclu (cliquer pour travailler)"
+                              : "Férié — travaillé (cliquer pour exclure)"
+                            : isExcluded
+                            ? "Exclu (cliquer pour réintégrer)"
+                            : "Cliquer pour exclure"
+                        }
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-all disabled:opacity-50 ${
+                          isExcluded
+                            ? "bg-gray-100 text-gray-400 border-gray-200 line-through"
+                            : isFerie
+                            ? "bg-green-50 text-green-700 border-green-400 ring-1 ring-green-300 hover:bg-green-100"
+                            : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                        }`}
+                      >
+                        {isFerie && !isExcluded ? `★ ${dayLabel}` : dayLabel}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="flex gap-5 mt-3 text-xs text-gray-400">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-300 inline-block" />
+                  Travaillé
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />
+                  ★ Férié travaillé
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block" />
+                  Exclu
+                </span>
               </div>
-            )}
-            <div className="flex gap-5 mt-3 text-xs text-gray-400">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-green-300 inline-block" />
-                Travaillé
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" />
-                ★ Férié travaillé
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block" />
-                Exclu
-              </span>
             </div>
-          </div>
+          )}
 
           {/* Suppléments ponctuels */}
           <div className="border-t border-gray-100 pt-5">
