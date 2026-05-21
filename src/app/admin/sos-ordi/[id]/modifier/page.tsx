@@ -55,7 +55,7 @@ export default async function ModifierClientPage({
           { label: "Admin", href: "/admin" },
           { label: "SOS Ordi", href: "/admin/sos-ordi" },
           {
-            label: `${client.prenom} ${client.nom}`,
+            label: [client.civilite, client.prenom, client.nom].filter(Boolean).join(" "),
             href: `/admin/sos-ordi/${client.id}`,
           },
           { label: "Modifier" },
@@ -67,6 +67,21 @@ export default async function ModifierClientPage({
         className="bg-white rounded-xl border border-gray-100 p-6 space-y-5"
       >
         <input type="hidden" name="id" value={client.id} />
+        <div>
+          <label htmlFor="civilite" className="block text-sm font-medium text-gray-700 mb-1.5">
+            Civilité
+          </label>
+          <select
+            id="civilite"
+            name="civilite"
+            defaultValue={client.civilite ?? ""}
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          >
+            <option value="">—</option>
+            <option value="M.">M.</option>
+            <option value="Mme">Mme</option>
+          </select>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Nom" name="nom" required defaultValue={client.nom} />
           <Field label="Prénom" name="prenom" required defaultValue={client.prenom} />

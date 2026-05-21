@@ -6,6 +6,7 @@ import Link from "next/link";
 
 interface Client {
   id: string;
+  civilite: string | null;
   nom: string;
   prenom: string;
   telephone: string | null;
@@ -68,7 +69,9 @@ export function SosOrdiClientsList({ initial }: { initial: Client[] }) {
           <tbody className="divide-y divide-gray-50">
             {filtered.map((client) => (
               <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-4 font-medium text-gray-800">{client.nom}</td>
+                <td className="px-5 py-4 font-medium text-gray-800">
+                  {client.civilite ? `${client.civilite} ${client.nom}` : client.nom}
+                </td>
                 <td className="px-5 py-4 text-gray-600">{client.prenom}</td>
                 <td className="px-5 py-4 text-gray-500">{client.telephone ?? "—"}</td>
                 <td className="px-5 py-4 text-gray-500 max-w-xs truncate">

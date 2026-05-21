@@ -18,6 +18,7 @@ async function assertAdmin() {
 export async function creerClient(formData: FormData) {
   const supabase = await assertAdmin();
   const { error } = await supabase.from("piloto_clients").insert({
+    civilite: (formData.get("civilite") as string) || null,
     nom: formData.get("nom") as string,
     prenom: formData.get("prenom") as string,
     email: formData.get("email") as string,
@@ -34,6 +35,7 @@ export async function modifierClient(formData: FormData) {
   const { error } = await supabase
     .from("piloto_clients")
     .update({
+      civilite: (formData.get("civilite") as string) || null,
       nom: formData.get("nom") as string,
       prenom: formData.get("prenom") as string,
       email: formData.get("email") as string,

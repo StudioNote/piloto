@@ -48,7 +48,7 @@ export default async function SosOrdiPage({
   ] = await Promise.all([
     supabase
       .from("piloto_clients")
-      .select("id, nom, prenom, telephone, adresse")
+      .select("id, civilite, nom, prenom, telephone, adresse")
       .order("nom"),
     supabase
       .from("piloto_interventions")

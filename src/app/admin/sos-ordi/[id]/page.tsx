@@ -61,7 +61,7 @@ export default async function FicheClientPage({
         items={[
           { label: "Admin", href: "/admin" },
           { label: "SOS Ordi", href: "/admin/sos-ordi" },
-          { label: `${client.prenom} ${client.nom}` },
+          { label: [client.civilite, client.prenom, client.nom].filter(Boolean).join(" ") },
         ]}
       />
 
@@ -69,7 +69,7 @@ export default async function FicheClientPage({
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
         <div className="flex items-start justify-between mb-5">
           <h2 className="text-2xl font-bold text-gray-900">
-            {client.prenom} {client.nom}
+            {[client.civilite, client.prenom, client.nom].filter(Boolean).join(" ")}
           </h2>
           <Link
             href={`/admin/sos-ordi/${client.id}/modifier`}
