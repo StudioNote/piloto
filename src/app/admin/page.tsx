@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Mic } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -23,6 +24,18 @@ export default function AdminPage() {
             Radio
           </p>
           <p className="text-xs text-gray-400 mt-1">Radios &amp; facturation mensuelle</p>
+        </Link>
+        <Link
+          href="/admin/voix-off"
+          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Mic size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
+              Voix-Off
+            </p>
+          </div>
+          <p className="text-xs text-gray-400">Prestations de voix-off</p>
         </Link>
         {["Documents", "Paramètres"].map((module) => (
           <div
