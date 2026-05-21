@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { creerAccesClient } from "@/app/admin/sos-ordi/actions";
 import { KeyRound, CheckCircle } from "lucide-react";
 
@@ -11,7 +11,18 @@ interface Props {
 }
 
 export function CreateAccessButton({ clientId, email, hasAccess }: Props) {
-  const [state, action, pending] = useActionState(creerAccesClient, null);
+  const [state, setState] = useState<{ password?: string; error?: string } | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    setPending(true);
+    setState(null);
+    const result = await creerAccesClient(null, fd);
+    setState(result);
+    setPending(false);
+  }
 
   if (hasAccess && !state?.password) {
     return (
@@ -47,7 +58,7 @@ export function CreateAccessButton({ clientId, email, hasAccess }: Props) {
       {state?.error && (
         <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{state.error}</p>
       )}
-      <form action={action}>
+      <form onSubmit={handleSubmit}>
         <input type="hidden" name="client_id" value={clientId} />
         <input type="hidden" name="email" value={email} />
         <button

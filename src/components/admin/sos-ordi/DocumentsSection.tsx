@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Trash2, Upload, FileText } from "lucide-react";
 import { deposerDocument, supprimerDocument } from "@/app/admin/sos-ordi/actions";
 
@@ -18,8 +18,20 @@ interface Props {
 }
 
 export function DocumentsSection({ clientId, initial }: Props) {
-  const [state, action, pending] = useActionState(deposerDocument, null);
+  const [state, setState] = useState<{ error?: string } | null>(null);
+  const [pending, setPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    setPending(true);
+    setState(null);
+    const result = await deposerDocument(null, fd);
+    setState(result);
+    setPending(false);
+    if (!result?.error) formRef.current?.reset();
+  }
 
   async function handleDelete(doc: Document) {
     if (!confirm(`Supprimer « ${doc.nom_fichier} » ? Cette action est irréversible.`)) return;
@@ -68,7 +80,7 @@ export function DocumentsSection({ clientId, initial }: Props) {
       )}
 
       {/* Formulaire d'ajout */}
-      <form ref={formRef} action={action} className="border border-dashed border-gray-200 rounded-xl p-5 space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="border border-dashed border-gray-200 rounded-xl p-5 space-y-4">
         <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
           <Upload size={15} className="text-gray-400" />
           Déposer un document
