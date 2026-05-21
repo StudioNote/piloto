@@ -159,7 +159,7 @@ export default async function FicheClientPage({
         </Link>
       </div>
 
-      <InterventionsList initial={interventions ?? []} />
+      <InterventionsList initial={interventions ?? []} clientId={client.id} />
     </div>
   );
 }

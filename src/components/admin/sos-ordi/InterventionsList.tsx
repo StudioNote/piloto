@@ -2,7 +2,8 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 interface Intervention {
   id: string;
@@ -19,7 +20,13 @@ const STATUT_STYLES: Record<string, string> = {
   Terminé: "bg-green-50 text-green-700 border-green-200",
 };
 
-export function InterventionsList({ initial }: { initial: Intervention[] }) {
+export function InterventionsList({
+  initial,
+  clientId,
+}: {
+  initial: Intervention[];
+  clientId: string;
+}) {
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -83,6 +90,13 @@ export function InterventionsList({ initial }: { initial: Intervention[] }) {
               >
                 {intervention.statut}
               </span>
+              <Link
+                href={`/admin/sos-ordi/${clientId}/intervention/${intervention.id}/modifier`}
+                title="Modifier"
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <Pencil size={16} />
+              </Link>
               <button
                 onClick={() => handleDelete(intervention.id)}
                 title="Supprimer"
