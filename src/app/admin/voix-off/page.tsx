@@ -48,7 +48,7 @@ export default async function VoixOffPage({
   ] = await Promise.all([
     supabase
       .from("piloto_voixoff_clients")
-      .select("id, nom, prenom, telephone")
+      .select("id, nom, prenom, societe, telephone")
       .order("nom"),
     supabase
       .from("piloto_voixoff_prestations")

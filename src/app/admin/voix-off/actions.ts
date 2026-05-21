@@ -17,9 +17,14 @@ async function assertAdmin() {
 
 export async function creerClientVoixOff(formData: FormData) {
   const supabase = await assertAdmin();
+  const societe = (formData.get("societe") as string) || null;
+  const nom = (formData.get("nom") as string) || null;
+  const prenom = (formData.get("prenom") as string) || null;
+  if (!societe && !nom) throw new Error("Renseignez au moins la société ou le nom.");
   const { error } = await supabase.from("piloto_voixoff_clients").insert({
-    nom: formData.get("nom") as string,
-    prenom: formData.get("prenom") as string,
+    societe,
+    nom,
+    prenom,
     email: (formData.get("email") as string) || null,
     telephone: (formData.get("telephone") as string) || null,
   });
@@ -30,11 +35,16 @@ export async function creerClientVoixOff(formData: FormData) {
 export async function modifierClientVoixOff(formData: FormData) {
   const supabase = await assertAdmin();
   const id = formData.get("id") as string;
+  const societe = (formData.get("societe") as string) || null;
+  const nom = (formData.get("nom") as string) || null;
+  const prenom = (formData.get("prenom") as string) || null;
+  if (!societe && !nom) throw new Error("Renseignez au moins la société ou le nom.");
   const { error } = await supabase
     .from("piloto_voixoff_clients")
     .update({
-      nom: formData.get("nom") as string,
-      prenom: formData.get("prenom") as string,
+      societe,
+      nom,
+      prenom,
       email: (formData.get("email") as string) || null,
       telephone: (formData.get("telephone") as string) || null,
     })

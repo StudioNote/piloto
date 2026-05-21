@@ -3,6 +3,7 @@ import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { PrestationsList } from "@/components/admin/voix-off/PrestationsList";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { clientLabel, clientContact } from "@/lib/voixoff-utils";
 
 function prevMonth(mois: string): string {
   const [year, month] = mois.split("-").map(Number);
@@ -61,15 +62,18 @@ export default async function FicheClientVoixOffPage({
         items={[
           { label: "Admin", href: "/admin" },
           { label: "Voix-Off", href: "/admin/voix-off" },
-          { label: `${client.prenom} ${client.nom}` },
+          { label: clientLabel(client) },
         ]}
       />
 
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-8">
         <div className="flex items-start justify-between mb-5">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {client.prenom} {client.nom}
-          </h2>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{clientLabel(client)}</h2>
+            {clientContact(client) && (
+              <p className="text-sm text-gray-500 mt-0.5">{clientContact(client)}</p>
+            )}
+          </div>
           <Link
             href={`/admin/voix-off/${client.id}/modifier`}
             className="text-sm text-gray-500 hover:text-gray-800 font-medium border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
