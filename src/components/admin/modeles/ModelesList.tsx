@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useActionState } from "react";
+import { useState, useRef } from "react";
 import { FileText, Trash2, Upload, Download } from "lucide-react";
 import { ajouterModele, supprimerModele } from "@/app/admin/modeles/actions";
 
@@ -16,20 +16,25 @@ interface Modele {
 export function ModelesList({ initial }: { initial: Modele[] }) {
   const [modeles, setModeles] = useState(initial);
   const [showForm, setShowForm] = useState(false);
+  const [state, setState] = useState<{ error?: string } | null>(null);
+  const [pending, setPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const [state, formAction, pending] = useActionState(
-    async (_prev: { error?: string } | null, fd: FormData) => {
-      const result = await ajouterModele(_prev, fd);
-      if (!result?.error) {
-        setShowForm(false);
-        formRef.current?.reset();
-        window.location.reload();
-      }
-      return result;
-    },
-    null
-  );
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    setPending(true);
+    setState(null);
+    const result = await ajouterModele(null, fd);
+    setPending(false);
+    if (result?.error) {
+      setState(result);
+    } else {
+      setShowForm(false);
+      formRef.current?.reset();
+      window.location.reload();
+    }
+  }
 
   async function handleDelete(m: Modele) {
     if (!confirm(`Supprimer « ${m.nom} » ? Cette action est irréversible.`)) return;
@@ -58,7 +63,7 @@ export function ModelesList({ initial }: { initial: Modele[] }) {
       {showForm && (
         <form
           ref={formRef}
-          action={formAction}
+          onSubmit={handleSubmit}
           className="bg-white rounded-xl border border-dashed border-blue-200 p-6 mb-6 space-y-4"
         >
           <p className="text-sm font-semibold text-gray-800">Nouveau modèle</p>
