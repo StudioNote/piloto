@@ -9,6 +9,7 @@ interface Intervention {
   duree_minutes: number | null;
   description: string | null;
   statut: string;
+  montant: number | null;
 }
 
 const STATUT_STYLES: Record<string, string> = {
@@ -65,6 +66,15 @@ export function InterventionsList({ initial }: { initial: Intervention[] }) {
               )}
             </div>
             <div className="flex items-center gap-3 shrink-0">
+              {intervention.montant !== null && (
+                <span className="text-sm font-semibold text-gray-800">
+                  {intervention.montant.toLocaleString("fr-FR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  €
+                </span>
+              )}
               <span
                 className={`text-xs font-medium px-2.5 py-1 rounded-full border ${
                   STATUT_STYLES[intervention.statut] ?? "bg-gray-50 text-gray-600 border-gray-200"

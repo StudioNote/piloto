@@ -50,12 +50,14 @@ export async function creerIntervention(formData: FormData) {
   const supabase = await assertAdmin();
   const clientId = formData.get("client_id") as string;
   const dureeRaw = formData.get("duree_minutes") as string;
+  const montantRaw = formData.get("montant") as string;
   const { error } = await supabase.from("piloto_interventions").insert({
     client_id: clientId,
     date: formData.get("date") as string,
     duree_minutes: dureeRaw ? parseInt(dureeRaw, 10) : null,
     description: (formData.get("description") as string) || null,
     statut: formData.get("statut") as string,
+    montant: montantRaw ? parseFloat(montantRaw) : null,
   });
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/sos-ordi/${clientId}`);
