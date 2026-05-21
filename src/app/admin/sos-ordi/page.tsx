@@ -25,18 +25,26 @@ function formatMonthLabel(mois: string): string {
 export default async function SosOrdiPage({
   searchParams,
 }: {
-  searchParams: { mois?: string };
+  searchParams: { mois?: string; annee?: string };
 }) {
   const supabase = await createClient();
 
   const currentMois =
     searchParams.mois ?? new Date().toISOString().slice(0, 7);
+  const currentAnnee =
+    Number(searchParams.annee) || new Date().getFullYear();
 
   const [year, month] = currentMois.split("-").map(Number);
   const debutMois = `${currentMois}-01`;
   const finMois = `${currentMois}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`;
+  const debutAnnee = `${currentAnnee}-01-01`;
+  const finAnnee = `${currentAnnee}-12-31`;
 
-  const [{ data: clients }, { data: interventionsMois }] = await Promise.all([
+  const [
+    { data: clients },
+    { data: interventionsMois },
+    { data: interventionsAnnee },
+  ] = await Promise.all([
     supabase
       .from("piloto_clients")
       .select("id, nom, prenom, telephone, adresse")
@@ -46,11 +54,20 @@ export default async function SosOrdiPage({
       .select("montant")
       .gte("date", debutMois)
       .lte("date", finMois),
+    supabase
+      .from("piloto_interventions")
+      .select("montant")
+      .gte("date", debutAnnee)
+      .lte("date", finAnnee),
   ]);
 
   const totalMois = (interventionsMois ?? []).reduce(
     (acc: number, i: { montant: number | null }) => acc + (i.montant ?? 0),
-    0
+    0,
+  );
+  const totalAnnee = (interventionsAnnee ?? []).reduce(
+    (acc: number, i: { montant: number | null }) => acc + (i.montant ?? 0),
+    0,
   );
 
   return (
@@ -59,37 +76,75 @@ export default async function SosOrdiPage({
         items={[{ label: "Admin", href: "/admin" }, { label: "SOS Ordi" }]}
       />
 
-      {/* Total SOS Ordi du mois */}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs text-blue-500 uppercase tracking-wide mb-0.5">
-              Total SOS Ordi
-            </p>
-            <p className="text-2xl font-bold text-blue-900">
-              {totalMois.toLocaleString("fr-FR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{" "}
-              €
-            </p>
+      {/* Totaux mensuel + annuel */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        {/* Total du mois */}
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-blue-500 uppercase tracking-wide mb-0.5">
+                Total SOS Ordi
+              </p>
+              <p className="text-2xl font-bold text-blue-900">
+                {totalMois.toLocaleString("fr-FR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/admin/sos-ordi?mois=${prevMonth(currentMois)}&annee=${currentAnnee}`}
+                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+              >
+                ←
+              </Link>
+              <span className="text-sm font-medium text-gray-700 capitalize whitespace-nowrap">
+                {formatMonthLabel(currentMois)}
+              </span>
+              <Link
+                href={`/admin/sos-ordi?mois=${nextMonth(currentMois)}&annee=${currentAnnee}`}
+                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+              >
+                →
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/admin/sos-ordi?mois=${prevMonth(currentMois)}`}
-              className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
-            >
-              ← Précédent
-            </Link>
-            <span className="text-sm font-medium text-gray-700 capitalize">
-              {formatMonthLabel(currentMois)}
-            </span>
-            <Link
-              href={`/admin/sos-ordi?mois=${nextMonth(currentMois)}`}
-              className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Suivant →
-            </Link>
+        </div>
+
+        {/* Total de l'année */}
+        <div className="bg-violet-50 border border-violet-100 rounded-xl p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-violet-500 uppercase tracking-wide mb-0.5">
+                Total de l&apos;année
+              </p>
+              <p className="text-2xl font-bold text-violet-900">
+                {totalAnnee.toLocaleString("fr-FR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{" "}
+                €
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/admin/sos-ordi?annee=${currentAnnee - 1}&mois=${currentMois}`}
+                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+              >
+                ←
+              </Link>
+              <span className="text-sm font-medium text-gray-700">
+                {currentAnnee}
+              </span>
+              <Link
+                href={`/admin/sos-ordi?annee=${currentAnnee + 1}&mois=${currentMois}`}
+                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 bg-white px-3 py-1.5 rounded-lg transition-colors"
+              >
+                →
+              </Link>
+            </div>
           </div>
         </div>
       </div>
