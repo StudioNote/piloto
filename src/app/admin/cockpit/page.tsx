@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
+import { getStripeCAByPeriod, getStripeCAByYear, getStudioNoteInstant } from "@/lib/stripe-data";
 import Link from "next/link";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -54,9 +55,20 @@ interface Activity {
   bg: string;
   text: string;
   subtleText: string;
+  unavailable?: boolean;
 }
 
 function ActivityCard({ a, grandTotal }: { a: Activity; grandTotal: number }) {
+  if (a.unavailable) {
+    return (
+      <div className="rounded-xl p-4 bg-gray-50 opacity-50">
+        <p className="text-xs font-medium uppercase tracking-wide mb-2 text-gray-400">
+          {a.label}
+        </p>
+        <p className="text-sm text-gray-400">Indisponible</p>
+      </div>
+    );
+  }
   const pct = grandTotal > 0 ? ((a.amount / grandTotal) * 100).toFixed(1) : null;
   return (
     <div className={`rounded-xl p-4 ${a.bg}`}>
@@ -75,13 +87,19 @@ function BarChart({ activities, grandTotal }: { activities: Activity[]; grandTot
   return (
     <div className="space-y-3">
       {activities.map((a) => {
-        const pct = grandTotal > 0 ? (a.amount / grandTotal) * 100 : 0;
+        const pct = !a.unavailable && grandTotal > 0 ? (a.amount / grandTotal) * 100 : 0;
         return (
           <div key={a.label}>
             <div className="flex items-center justify-between text-xs mb-1.5">
-              <span className="font-medium text-gray-700">{a.label}</span>
+              <span className={`font-medium ${a.unavailable ? "text-gray-400" : "text-gray-700"}`}>
+                {a.label}
+              </span>
               <span className="text-gray-400">
-                {grandTotal > 0 ? `${pct.toFixed(1)} % · ${EUR(a.amount)}` : "—"}
+                {a.unavailable
+                  ? "—"
+                  : grandTotal > 0
+                  ? `${pct.toFixed(1)} % · ${EUR(a.amount)}`
+                  : "—"}
               </span>
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -119,12 +137,18 @@ export default async function CockpitPage({
   // ── data fetching ──────────────────────────────────────────────────────────
 
   let sosTotal = 0, builderTotal = 0, voixoffTotal = 0, radioTotal = 0;
+  let swipcodeTotal = 0, studionoteTotal = 0;
+  let stripeUnavailable = false;
   let byMonth: {
     sos: number[]; builder: number[]; voixoff: number[]; radio: number[];
+    swipcode: number[]; studionote: number[];
   } | null = null;
 
   if (vue === "mensuelle") {
-    const [sos, builder, voixoff, radio] = await Promise.all([
+    const startTs = Math.floor(new Date(year, month - 1, 1).getTime() / 1000);
+    const endTs = Math.floor(new Date(year, month, 1).getTime() / 1000) - 1;
+
+    const [sos, builder, voixoff, radio, stripeData] = await Promise.all([
       supabase.from("piloto_interventions").select("montant")
         .gte("date", debutMois).lte("date", finMois),
       supabase.from("piloto_builder_prestations").select("montant")
@@ -133,13 +157,18 @@ export default async function CockpitPage({
         .gte("date", debutMois).lte("date", finMois),
       supabase.from("piloto_radio_factures").select("montant")
         .eq("annee", year).eq("mois", month),
+      getStripeCAByPeriod(startTs, endTs),
     ]);
+
     sosTotal = sumMontants(sos.data ?? []);
     builderTotal = sumMontants(builder.data ?? []);
     voixoffTotal = sumMontants(voixoff.data ?? []);
     radioTotal = sumMontants(radio.data ?? []);
+    swipcodeTotal = stripeData.swipcode;
+    studionoteTotal = stripeData.studionote;
+    if (stripeData.error) stripeUnavailable = true;
   } else {
-    const [sos, builder, voixoff, radio] = await Promise.all([
+    const [sos, builder, voixoff, radio, stripeYear] = await Promise.all([
       supabase.from("piloto_interventions").select("date, montant")
         .gte("date", debutAnnee).lte("date", finAnnee),
       supabase.from("piloto_builder_prestations").select("date, montant")
@@ -148,6 +177,7 @@ export default async function CockpitPage({
         .gte("date", debutAnnee).lte("date", finAnnee),
       supabase.from("piloto_radio_factures").select("mois, montant")
         .eq("annee", currentAnnee),
+      getStripeCAByYear(currentAnnee),
     ]);
 
     const sosData = sos.data ?? [];
@@ -159,16 +189,24 @@ export default async function CockpitPage({
     builderTotal = sumMontants(builderData);
     voixoffTotal = sumMontants(voixoffData);
     radioTotal = radioData.reduce((acc, r) => acc + Number(r.montant ?? 0), 0);
+    swipcodeTotal = stripeYear.annual.swipcode;
+    studionoteTotal = stripeYear.annual.studionote;
+    if (stripeYear.error) stripeUnavailable = true;
 
     byMonth = {
       sos: aggregateByMonth(sosData),
       builder: aggregateByMonth(builderData),
       voixoff: aggregateByMonth(voixoffData),
       radio: aggregateRadioByMonth(radioData as { mois: number; montant: number | null }[]),
+      swipcode: stripeYear.monthly.swipcode,
+      studionote: stripeYear.monthly.studionote,
     };
   }
 
-  const grandTotal = sosTotal + builderTotal + voixoffTotal + radioTotal;
+  const studioNoteInstant = await getStudioNoteInstant();
+
+  const grandTotal =
+    sosTotal + builderTotal + voixoffTotal + radioTotal + swipcodeTotal + studionoteTotal;
 
   const activities: Activity[] = [
     {
@@ -203,12 +241,30 @@ export default async function CockpitPage({
       text: "text-emerald-800",
       subtleText: "text-emerald-500",
     },
+    {
+      label: "Swipcode",
+      amount: swipcodeTotal,
+      bar: "bg-orange-500",
+      bg: "bg-orange-50",
+      text: "text-orange-800",
+      subtleText: "text-orange-500",
+      unavailable: stripeUnavailable,
+    },
+    {
+      label: "StudioNote",
+      amount: studionoteTotal,
+      bar: "bg-sky-500",
+      bg: "bg-sky-50",
+      text: "text-sky-800",
+      subtleText: "text-sky-500",
+      unavailable: stripeUnavailable,
+    },
   ];
 
   // ── render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-10">
       <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Cockpit" }]} />
 
       {/* Title + toggle */}
@@ -282,7 +338,7 @@ export default async function CockpitPage({
       </div>
 
       {/* Activity cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
         {activities.map((a) => (
           <ActivityCard key={a.label} a={a} grandTotal={grandTotal} />
         ))}
@@ -296,7 +352,7 @@ export default async function CockpitPage({
 
       {/* Monthly breakdown — annual view only */}
       {vue === "annuelle" && byMonth && (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 mb-5">
           <p className="text-xs text-gray-400 uppercase tracking-wide mb-4">
             Évolution mensuelle {currentAnnee}
           </p>
@@ -319,6 +375,12 @@ export default async function CockpitPage({
                   <th className="text-right pb-2.5 px-2 text-xs font-medium text-emerald-500">
                     Radio
                   </th>
+                  <th className="text-right pb-2.5 px-2 text-xs font-medium text-orange-500">
+                    Swipcode
+                  </th>
+                  <th className="text-right pb-2.5 px-2 text-xs font-medium text-sky-500">
+                    StudioNote
+                  </th>
                   <th className="text-right pb-2.5 pl-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
                     Total
                   </th>
@@ -330,7 +392,9 @@ export default async function CockpitPage({
                     byMonth!.sos[i] +
                     byMonth!.builder[i] +
                     byMonth!.voixoff[i] +
-                    byMonth!.radio[i];
+                    byMonth!.radio[i] +
+                    byMonth!.swipcode[i] +
+                    byMonth!.studionote[i];
                   return (
                     <tr key={i} className={rowTotal === 0 ? "opacity-35" : ""}>
                       <td className="py-2.5 pr-4 font-medium text-gray-700">{name}</td>
@@ -345,6 +409,24 @@ export default async function CockpitPage({
                       </td>
                       <td className="py-2.5 px-2 text-right text-gray-500 tabular-nums">
                         {byMonth!.radio[i] > 0 ? EUR(byMonth!.radio[i]) : "—"}
+                      </td>
+                      <td className="py-2.5 px-2 text-right text-gray-500 tabular-nums">
+                        {stripeUnavailable ? (
+                          <span className="text-gray-300">—</span>
+                        ) : byMonth!.swipcode[i] > 0 ? (
+                          EUR(byMonth!.swipcode[i])
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-2.5 px-2 text-right text-gray-500 tabular-nums">
+                        {stripeUnavailable ? (
+                          <span className="text-gray-300">—</span>
+                        ) : byMonth!.studionote[i] > 0 ? (
+                          EUR(byMonth!.studionote[i])
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="py-2.5 pl-4 text-right font-semibold text-gray-800 tabular-nums">
                         {rowTotal > 0 ? EUR(rowTotal) : "—"}
@@ -370,6 +452,12 @@ export default async function CockpitPage({
                   <td className="pt-3 px-2 text-right text-xs font-semibold text-emerald-700 tabular-nums">
                     {EUR(radioTotal)}
                   </td>
+                  <td className="pt-3 px-2 text-right text-xs font-semibold text-orange-700 tabular-nums">
+                    {stripeUnavailable ? "—" : EUR(swipcodeTotal)}
+                  </td>
+                  <td className="pt-3 px-2 text-right text-xs font-semibold text-sky-700 tabular-nums">
+                    {stripeUnavailable ? "—" : EUR(studionoteTotal)}
+                  </td>
                   <td className="pt-3 pl-4 text-right text-xs font-bold text-gray-900 tabular-nums">
                     {EUR(grandTotal)}
                   </td>
@@ -379,6 +467,33 @@ export default async function CockpitPage({
           </div>
         </div>
       )}
+
+      {/* StudioNote — état actuel */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <p className="text-xs text-sky-500 uppercase tracking-wide mb-4">StudioNote — état actuel</p>
+        {studioNoteInstant.error ? (
+          <p className="text-sm text-gray-400">Données indisponibles</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">MRR</p>
+              <p className="text-2xl font-bold text-sky-800">{EUR(studioNoteInstant.mrr)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Abonnés actifs</p>
+              <p className="text-2xl font-bold text-sky-800">{studioNoteInstant.subscribers}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">
+                CA {vue === "mensuelle" ? formatMonthLabel(currentMois) : currentAnnee}
+              </p>
+              <p className="text-2xl font-bold text-sky-800">
+                {stripeUnavailable ? "—" : EUR(studionoteTotal)}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
