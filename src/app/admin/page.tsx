@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mic, Hammer, TrendingUp } from "lucide-react";
+import { Mic, Hammer, TrendingUp, FileText, Settings } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -61,15 +61,30 @@ export default function AdminPage() {
           </div>
           <p className="text-xs text-gray-400">Clients &amp; projets web</p>
         </Link>
-        {["Documents", "Paramètres"].map((module) => (
-          <div
-            key={module}
-            className="bg-white rounded-xl border border-gray-100 p-6 opacity-40"
-          >
-            <p className="font-medium text-gray-700">{module}</p>
-            <p className="text-xs text-gray-400 mt-1">Module à venir</p>
+        <Link
+          href="/admin/modeles"
+          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <FileText size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
+              Modèles
+            </p>
           </div>
-        ))}
+          <p className="text-xs text-gray-400">Bibliothèque de documents réutilisables</p>
+        </Link>
+        <Link
+          href="/admin/parametres"
+          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Settings size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
+              Paramètres
+            </p>
+          </div>
+          <p className="text-xs text-gray-400">Sécurité &amp; infos professionnelles</p>
+        </Link>
       </div>
     </div>
   );

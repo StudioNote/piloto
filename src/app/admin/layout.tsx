@@ -54,6 +54,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           >
             Builder
           </Link>
+          <Link
+            href="/admin/modeles"
+            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            Modèles
+          </Link>
+          <Link
+            href="/admin/parametres"
+            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            Paramètres
+          </Link>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">{user.email}</span>
