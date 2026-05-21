@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mic } from "lucide-react";
+import { Mic, Hammer } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -36,6 +36,18 @@ export default function AdminPage() {
             </p>
           </div>
           <p className="text-xs text-gray-400">Prestations de voix-off</p>
+        </Link>
+        <Link
+          href="/admin/builder"
+          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Hammer size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
+              Builder
+            </p>
+          </div>
+          <p className="text-xs text-gray-400">Clients &amp; projets web</p>
         </Link>
         {["Documents", "Paramètres"].map((module) => (
           <div
