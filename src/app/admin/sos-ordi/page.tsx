@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
-import { Eye, Pencil } from "lucide-react";
+import { SosOrdiClientsList } from "@/components/admin/sos-ordi/SosOrdiClientsList";
 import Link from "next/link";
 
 function prevMonth(mois: string): string {
@@ -161,53 +161,7 @@ export default async function SosOrdiPage({
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        {!clients || clients.length === 0 ? (
-          <div className="p-16 text-center text-gray-400 text-sm">
-            Aucun client enregistré.
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Nom</th>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Prénom</th>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Téléphone</th>
-                <th className="text-left px-5 py-3.5 font-medium text-gray-500">Adresse</th>
-                <th className="px-5 py-3.5" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {clients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-4 font-medium text-gray-800">{client.nom}</td>
-                  <td className="px-5 py-4 text-gray-600">{client.prenom}</td>
-                  <td className="px-5 py-4 text-gray-500">{client.telephone ?? "—"}</td>
-                  <td className="px-5 py-4 text-gray-500 max-w-xs truncate">
-                    {client.adresse ?? "—"}
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex justify-end gap-1">
-                      <Link
-                        href={`/admin/sos-ordi/${client.id}`}
-                        title="Voir"
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                      >
-                        <Eye size={16} />
-                      </Link>
-                      <Link
-                        href={`/admin/sos-ordi/${client.id}/modifier`}
-                        title="Modifier"
-                        className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                      >
-                        <Pencil size={16} />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <SosOrdiClientsList initial={clients ?? []} />
       </div>
     </div>
   );
