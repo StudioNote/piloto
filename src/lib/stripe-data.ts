@@ -33,18 +33,19 @@ function lineProductId(line: Stripe.InvoiceLineItem): string | null {
   return line.pricing?.price_details?.product ?? null;
 }
 
-function sumLineItems(
+function classifyAndSumInvoices(
   invoices: Stripe.Invoice[]
 ): { swipcode: number; studionote: number } {
   let swipcode = 0,
     studionote = 0;
   for (const inv of invoices) {
+    const net = (inv.amount_paid ?? 0) / 100;
+    if (net === 0) continue;
     for (const line of inv.lines.data) {
       const pid = lineProductId(line);
       if (!pid) continue;
-      const amount = line.amount / 100;
-      if (SWIPCODE_PRODUCT_IDS.includes(pid)) swipcode += amount;
-      else if (STUDIONOTE_PRODUCT_IDS.includes(pid)) studionote += amount;
+      if (SWIPCODE_PRODUCT_IDS.includes(pid)) { swipcode += net; break; }
+      if (STUDIONOTE_PRODUCT_IDS.includes(pid)) { studionote += net; break; }
     }
   }
   return { swipcode, studionote };
@@ -60,7 +61,7 @@ export const getStripeCAByPeriod = unstable_cache(
         status: "paid",
         created: { gte: startTs, lte: endTs },
       });
-      return sumLineItems(invoices);
+      return classifyAndSumInvoices(invoices);
     } catch (e) {
       return { swipcode: 0, studionote: 0, error: String(e) };
     }
@@ -91,6 +92,8 @@ export const getStripeCAByYear = unstable_cache(
       };
 
       for (const inv of invoices) {
+        const net = (inv.amount_paid ?? 0) / 100;
+        if (net === 0) continue;
         const paidAt = inv.status_transitions?.paid_at;
         const date = paidAt
           ? new Date(paidAt * 1000)
@@ -100,9 +103,8 @@ export const getStripeCAByYear = unstable_cache(
         for (const line of inv.lines.data) {
           const pid = lineProductId(line);
           if (!pid) continue;
-          const amount = line.amount / 100;
-          if (SWIPCODE_PRODUCT_IDS.includes(pid)) monthly.swipcode[m] += amount;
-          else if (STUDIONOTE_PRODUCT_IDS.includes(pid)) monthly.studionote[m] += amount;
+          if (SWIPCODE_PRODUCT_IDS.includes(pid)) { monthly.swipcode[m] += net; break; }
+          if (STUDIONOTE_PRODUCT_IDS.includes(pid)) { monthly.studionote[m] += net; break; }
         }
       }
 
@@ -136,7 +138,6 @@ export const getStudioNoteInstant = unstable_cache(
         const page = await stripe.subscriptions.list({
           status: "active",
           limit: 100,
-          expand: ["data.items.data.price.product"],
           ...(cursor ? { starting_after: cursor } : {}),
         });
         subs.push(...page.data);
