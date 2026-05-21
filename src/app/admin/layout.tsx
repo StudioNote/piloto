@@ -25,6 +25,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             Piloto
           </Link>
           <Link
+            href="/admin/cockpit"
+            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            Cockpit
+          </Link>
+          <Link
             href="/admin/sos-ordi"
             className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
           >

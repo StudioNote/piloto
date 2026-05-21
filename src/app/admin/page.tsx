@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mic, Hammer } from "lucide-react";
+import { Mic, Hammer, TrendingUp } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -7,6 +7,18 @@ export default function AdminPage() {
       <h2 className="text-3xl font-bold text-gray-900 mb-2">Bienvenue sur Piloto</h2>
       <p className="text-gray-500 mb-10">Tableau de bord administrateur.</p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Link
+          href="/admin/cockpit"
+          className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={16} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
+            <p className="font-medium text-gray-800 group-hover:text-blue-600 transition-colors">
+              Cockpit
+            </p>
+          </div>
+          <p className="text-xs text-gray-400">CA multi-activités en temps réel</p>
+        </Link>
         <Link
           href="/admin/sos-ordi"
           className="bg-white rounded-xl border border-gray-100 p-6 hover:border-blue-200 hover:shadow-sm transition-all group"
