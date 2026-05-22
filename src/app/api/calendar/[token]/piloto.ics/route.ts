@@ -1,7 +1,8 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 interface RendezVous {
   id: string;
@@ -36,10 +37,11 @@ function addOneHour(time: string): string {
 }
 
 function generateICS(rdvList: RendezVous[]): string {
-  const now = new Date()
-    .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\..+/, "") + "Z";
+  const now =
+    new Date()
+      .toISOString()
+      .replace(/[-:]/g, "")
+      .replace(/\..+/, "") + "Z";
 
   const events = rdvList
     .map((rdv) => {
@@ -89,21 +91,44 @@ export async function GET(
 ) {
   const { token } = params;
 
-  const { data: tokenRow } = await supabaseAdmin
+  // Client créé localement avec fetch sans cache pour contourner
+  // le data-cache Next.js 14 qui met en cache les appels fetch() des Route Handlers.
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      global: {
+        fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+          fetch(input, { ...init, cache: "no-store" }),
+      },
+    }
+  );
+
+  const { data: tokenRow, error: tokenError } = await supabase
     .from("piloto_calendar_token")
     .select("token")
     .eq("id", "singleton")
     .single();
 
+  if (tokenError) {
+    console.error("[iCal] token error:", tokenError.message);
+  }
+
   if (!tokenRow || tokenRow.token !== token) {
     return new NextResponse("Non trouvé", { status: 404 });
   }
 
-  const { data: rdvList } = await supabaseAdmin
+  const { data: rdvList, error: rdvError } = await supabase
     .from("piloto_rendezvous")
     .select("*")
     .order("date")
     .order("heure_debut");
+
+  if (rdvError) {
+    console.error("[iCal] rdv error:", rdvError.message);
+  }
+
+  console.info(`[iCal] ${rdvList?.length ?? 0} RDV exporté(s)`);
 
   const icsContent = generateICS(rdvList ?? []);
 
