@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mic, Hammer, TrendingUp, FileText, Settings, Radio, Calendar } from "lucide-react";
+import { Mic, Hammer, TrendingUp, FileText, Settings, Radio, Calendar, Target } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface ModuleItem {
@@ -63,6 +63,16 @@ const modules: ModuleItem[] = [
     iconHover: "group-hover:text-violet-500",
     textHover: "group-hover:text-violet-600",
     borderHover: "hover:border-violet-200",
+  },
+  {
+    href: "/admin/prospects",
+    label: "Prospects",
+    desc: "Pipeline commercial Builder",
+    icon: Target,
+    dot: "bg-indigo-600",
+    iconHover: "group-hover:text-indigo-600",
+    textHover: "group-hover:text-indigo-700",
+    borderHover: "hover:border-indigo-200",
   },
   {
     href: "/admin/builder",

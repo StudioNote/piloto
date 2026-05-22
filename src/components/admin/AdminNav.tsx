@@ -9,6 +9,7 @@ const navItems = [
   { label: "SOS Ordi",  href: "/admin/sos-ordi",   activeText: "text-blue-600",    activeBorder: "border-blue-500"  },
   { label: "Radio",     href: "/admin/radio",       activeText: "text-emerald-600", activeBorder: "border-emerald-500" },
   { label: "Voix-Off",  href: "/admin/voix-off",   activeText: "text-violet-600",  activeBorder: "border-violet-500" },
+  { label: "Prospects", href: "/admin/prospects",   activeText: "text-indigo-600",  activeBorder: "border-indigo-500" },
   { label: "Builder",   href: "/admin/builder",     activeText: "text-amber-600",   activeBorder: "border-amber-500" },
   { label: "Modèles",   href: "/admin/modeles",     activeText: "text-teal-600",    activeBorder: "border-teal-500"  },
   { label: "Paramètres",href: "/admin/parametres",  activeText: "text-slate-600",   activeBorder: "border-slate-400" },
