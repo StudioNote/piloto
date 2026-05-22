@@ -235,18 +235,21 @@ export function AgendaCalendar({
                         {rdv.client_nom ? ` · ${rdv.client_nom}` : ""}
                       </p>
                       {rdv.adresse && (
-                        <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                          <MapPin size={11} className="shrink-0" />
+                        <div className="flex items-start gap-2 mt-0.5 flex-wrap">
+                          <p className="text-xs text-gray-400 flex items-center gap-1 min-w-0">
+                            <MapPin size={11} className="shrink-0" />
+                            <span className="truncate">{rdv.adresse}</span>
+                          </p>
                           <a
-                            href={`https://maps.google.com/?q=${encodeURIComponent(rdv.adresse)}`}
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rdv.adresse)}`}
                             target="_blank"
-                            rel="noreferrer"
-                            className="hover:text-rose-600 transition-colors truncate"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:text-rose-700 shrink-0 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {rdv.adresse}
+                            Itinéraire →
                           </a>
-                        </p>
+                        </div>
                       )}
                       {rdv.description && (
                         <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">

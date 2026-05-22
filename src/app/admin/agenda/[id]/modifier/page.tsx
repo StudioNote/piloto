@@ -141,14 +141,14 @@ export default async function ModifierRdvPage({
               />
               {rdv.adresse && (
                 <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(rdv.adresse)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rdv.adresse)}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-500 hover:text-rose-600 hover:border-rose-300 transition-colors whitespace-nowrap"
-                  title="Voir sur Google Maps"
+                  title="Ouvrir dans Google Maps"
                 >
                   <MapPin size={14} />
-                  Maps
+                  Itinéraire
                 </a>
               )}
             </div>

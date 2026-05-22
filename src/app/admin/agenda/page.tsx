@@ -4,7 +4,7 @@ import { AgendaCalendar } from "@/components/admin/agenda/AgendaCalendar";
 import { CopyLinkButton } from "@/components/admin/agenda/CopyLinkButton";
 import { RegenerateTokenButton } from "@/components/admin/agenda/RegenerateTokenButton";
 import Link from "next/link";
-import { Calendar } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 import { randomBytes } from "crypto";
 import { headers } from "next/headers";
 
@@ -172,6 +172,17 @@ export default async function AgendaPage({
                           <p className="text-xs text-gray-400">
                             {rdv.client_nom}
                           </p>
+                        )}
+                        {rdv.adresse && (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rdv.adresse)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 hover:text-rose-700 mt-0.5 transition-colors"
+                          >
+                            <MapPin size={11} />
+                            {rdv.adresse}
+                          </a>
                         )}
                       </td>
                       <td className="px-5 py-3 hidden sm:table-cell">
