@@ -1,26 +1,32 @@
 "use server";
 
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseForEmail, DEMO_EMAIL } from "@/lib/getDb";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 
-async function requireAdmin() {
+const ADMIN_EMAIL = "contact@anthonychesnier.fr";
+
+async function assertAdmin() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
+  return supabaseForEmail(user.email!);
 }
 
 export async function creerRendezVous(formData: FormData) {
-  await requireAdmin();
+  const db = await assertAdmin();
 
   const date = formData.get("date") as string;
   const heureDebut = formData.get("heure_debut") as string;
   const heureFin = (formData.get("heure_fin") as string) || null;
 
-  const { error } = await supabaseAdmin.from("piloto_rendezvous").insert({
+  const { error } = await db.from("piloto_rendezvous").insert({
     titre: formData.get("titre") as string,
     activite: formData.get("activite") as string,
     client_nom: (formData.get("client_nom") as string) || null,
@@ -34,16 +40,17 @@ export async function creerRendezVous(formData: FormData) {
   if (error) throw new Error(error.message);
 
   const mois = date.slice(0, 7);
+  revalidatePath("/admin/agenda");
   redirect(`/admin/agenda?mois=${mois}`);
 }
 
 export async function modifierRendezVous(formData: FormData) {
-  await requireAdmin();
+  const db = await assertAdmin();
 
   const id = formData.get("id") as string;
   const date = formData.get("date") as string;
 
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from("piloto_rendezvous")
     .update({
       titre: formData.get("titre") as string,
@@ -60,30 +67,32 @@ export async function modifierRendezVous(formData: FormData) {
   if (error) throw new Error(error.message);
 
   const mois = date.slice(0, 7);
+  revalidatePath("/admin/agenda");
   redirect(`/admin/agenda?mois=${mois}`);
 }
 
 export async function supprimerRendezVous(formData: FormData) {
-  await requireAdmin();
+  const db = await assertAdmin();
 
   const id = formData.get("id") as string;
   const mois = formData.get("mois") as string;
 
-  await supabaseAdmin.from("piloto_rendezvous").delete().eq("id", id);
+  await db.from("piloto_rendezvous").delete().eq("id", id);
 
+  revalidatePath("/admin/agenda");
   redirect(`/admin/agenda?mois=${mois}`);
 }
 
 export async function regenererTokenCal() {
-  await requireAdmin();
+  const db = await assertAdmin();
 
   const token = randomBytes(32).toString("hex");
 
-  await supabaseAdmin.from("piloto_calendar_token").upsert({
+  await db.from("piloto_calendar_token").upsert({
     id: "singleton",
     token,
-    updated_at: new Date().toISOString(),
   });
 
+  revalidatePath("/admin/agenda");
   redirect("/admin/agenda");
 }
