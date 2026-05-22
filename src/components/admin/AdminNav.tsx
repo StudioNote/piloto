@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { label: "Cockpit",    href: "/admin/cockpit",    activeText: "text-slate-800",   activeBorder: "border-slate-700" },
+  { label: "Agenda",    href: "/admin/agenda",     activeText: "text-rose-600",    activeBorder: "border-rose-600"  },
   { label: "SOS Ordi",  href: "/admin/sos-ordi",   activeText: "text-blue-600",    activeBorder: "border-blue-500"  },
   { label: "Radio",     href: "/admin/radio",       activeText: "text-emerald-600", activeBorder: "border-emerald-500" },
   { label: "Voix-Off",  href: "/admin/voix-off",   activeText: "text-violet-600",  activeBorder: "border-violet-500" },

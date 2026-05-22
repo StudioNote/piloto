@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mic, Hammer, TrendingUp, FileText, Settings, Radio } from "lucide-react";
+import { Mic, Hammer, TrendingUp, FileText, Settings, Radio, Calendar } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface ModuleItem {
@@ -23,6 +23,16 @@ const modules: ModuleItem[] = [
     iconHover: "group-hover:text-slate-700",
     textHover: "group-hover:text-slate-800",
     borderHover: "hover:border-slate-200",
+  },
+  {
+    href: "/admin/agenda",
+    label: "Agenda",
+    desc: "Rendez-vous et synchro Calendrier",
+    icon: Calendar,
+    dot: "bg-rose-600",
+    iconHover: "group-hover:text-rose-600",
+    textHover: "group-hover:text-rose-700",
+    borderHover: "hover:border-rose-200",
   },
   {
     href: "/admin/sos-ordi",
