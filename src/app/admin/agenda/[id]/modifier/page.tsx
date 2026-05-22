@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { DeleteRdvButton } from "@/components/admin/agenda/DeleteRdvButton";
 import { modifierRendezVous } from "../../actions";
@@ -11,8 +11,9 @@ export default async function ModifierRdvPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const db = await getDb();
 
-  const { data: rdv } = await supabaseAdmin
+  const { data: rdv } = await db
     .from("piloto_rendezvous")
     .select("*")
     .eq("id", id)

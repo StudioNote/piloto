@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { InterventionsList } from "@/components/admin/sos-ordi/InterventionsList";
 import { DocumentsSection } from "@/components/admin/sos-ordi/DocumentsSection";
@@ -35,19 +35,19 @@ export default async function FicheClientPage({
 }) {
   const { id } = await params;
   const { mois } = await searchParams;
-  const supabase = await createClient();
+  const db = await getDb();
 
   const currentMois = mois ?? new Date().toISOString().slice(0, 7);
 
   const [{ data: client }, { data: interventions }, { data: documents }] =
     await Promise.all([
-      supabase.from("piloto_clients").select("*").eq("id", id).single(),
-      supabase
+      db.from("piloto_clients").select("*").eq("id", id).single(),
+      db
         .from("piloto_interventions")
         .select("*")
         .eq("client_id", id)
         .order("date", { ascending: false }),
-      supabase
+      db
         .from("piloto_documents")
         .select("id, nom_fichier, description, url_storage, created_at")
         .eq("client_id", id)

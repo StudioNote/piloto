@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { modifierProspect } from "../../actions";
 import { ProspectForm } from "@/components/admin/prospects/ProspectForm";
@@ -10,8 +10,9 @@ export default async function ModifierProspectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const db = await getDb();
 
-  const { data: prospect } = await supabaseAdmin
+  const { data: prospect } = await db
     .from("piloto_builder_prospects")
     .select("*")
     .eq("id", id)

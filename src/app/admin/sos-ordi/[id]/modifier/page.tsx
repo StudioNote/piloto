@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { modifierClient } from "../../actions";
 import { notFound } from "next/navigation";
@@ -39,8 +39,8 @@ export default async function ModifierClientPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = await createClient();
-  const { data: client } = await supabase
+  const db = await getDb();
+  const { data: client } = await db
     .from("piloto_clients")
     .select("*")
     .eq("id", params.id)

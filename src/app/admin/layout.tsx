@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { DemoBanner } from "@/components/admin/DemoBanner";
+import { DEMO_EMAIL } from "@/lib/getDb";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -39,6 +41,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </form>
         </div>
       </nav>
+      <DemoBanner isDemo={user.email === DEMO_EMAIL} />
       {children}
     </div>
   );

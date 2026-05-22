@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -36,8 +36,9 @@ export default async function ProspectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const db = await getDb();
 
-  const { data: prospect } = await supabaseAdmin
+  const { data: prospect } = await db
     .from("piloto_builder_prospects")
     .select("*")
     .eq("id", id)
@@ -63,7 +64,7 @@ export default async function ProspectPage({
 
   let clientNom: string | null = null;
   if (prospect.converted_client_id) {
-    const { data: client } = await supabaseAdmin
+    const { data: client } = await db
       .from("piloto_builder_clients")
       .select("societe, nom, prenom")
       .eq("id", prospect.converted_client_id)

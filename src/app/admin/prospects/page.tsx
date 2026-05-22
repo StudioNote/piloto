@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { KanbanBoard } from "@/components/admin/prospects/KanbanBoard";
 import Link from "next/link";
@@ -14,7 +14,8 @@ const STATUT_LABELS: Record<string, string> = {
 };
 
 export default async function ProspectsPage() {
-  const { data: prospects } = await supabaseAdmin
+  const db = await getDb();
+  const { data: prospects } = await db
     .from("piloto_builder_prospects")
     .select("id, societe, nom, prenom, montant_estime, statut, prochaine_action_date, converted_client_id")
     .order("created_at", { ascending: false });

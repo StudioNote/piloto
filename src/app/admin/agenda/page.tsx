@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { AgendaCalendar } from "@/components/admin/agenda/AgendaCalendar";
 import { CopyLinkButton } from "@/components/admin/agenda/CopyLinkButton";
@@ -39,8 +39,10 @@ export default async function AgendaPage({
   const [year, month] = mois.split("-").map(Number);
   const lastDay = new Date(year, month, 0).getDate();
 
+  const db = await getDb();
+
   // Assurer l'existence du token iCal
-  let { data: tokenRow } = await supabaseAdmin
+  let { data: tokenRow } = await db
     .from("piloto_calendar_token")
     .select("token")
     .eq("id", "singleton")
@@ -48,7 +50,7 @@ export default async function AgendaPage({
 
   if (!tokenRow) {
     const token = randomBytes(32).toString("hex");
-    await supabaseAdmin.from("piloto_calendar_token").insert({
+    await db.from("piloto_calendar_token").insert({
       id: "singleton",
       token,
     });
@@ -69,7 +71,7 @@ export default async function AgendaPage({
     fetchEnd = `${mois}-${String(lastDay).padStart(2, "0")}`;
   }
 
-  const { data: rdvView } = await supabaseAdmin
+  const { data: rdvView } = await db
     .from("piloto_rendezvous")
     .select("*")
     .gte("date", fetchStart)
@@ -81,7 +83,7 @@ export default async function AgendaPage({
     .toISOString()
     .slice(0, 10);
 
-  const { data: rdvUpcoming } = await supabaseAdmin
+  const { data: rdvUpcoming } = await db
     .from("piloto_rendezvous")
     .select("*")
     .gte("date", today)

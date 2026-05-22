@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { creerPrestation } from "../../actions";
 import { notFound } from "next/navigation";
@@ -8,8 +8,8 @@ export default async function NouvellePrestationPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = await createClient();
-  const { data: client } = await supabase
+  const db = await getDb();
+  const { data: client } = await db
     .from("piloto_voixoff_clients")
     .select("id, nom, prenom")
     .eq("id", params.id)

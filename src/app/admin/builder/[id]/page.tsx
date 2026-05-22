@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { BuilderPrestationsList } from "@/components/admin/builder/BuilderPrestationsList";
 import { notFound } from "next/navigation";
@@ -32,18 +32,18 @@ export default async function FicheClientBuilderPage({
   params: { id: string };
   searchParams: { mois?: string };
 }) {
-  const supabase = await createClient();
+  const db = await getDb();
 
   const currentMois =
     searchParams.mois ?? new Date().toISOString().slice(0, 7);
 
   const [{ data: client }, { data: prestations }] = await Promise.all([
-    supabase
+    db
       .from("piloto_builder_clients")
       .select("*")
       .eq("id", params.id)
       .single(),
-    supabase
+    db
       .from("piloto_builder_prestations")
       .select("id, date, description, montant")
       .eq("client_id", params.id)

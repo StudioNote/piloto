@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { modifierIntervention } from "../../../../actions";
 import { notFound } from "next/navigation";
@@ -8,15 +8,15 @@ export default async function ModifierInterventionPage({
 }: {
   params: { id: string; interventionId: string };
 }) {
-  const supabase = await createClient();
+  const db = await getDb();
 
   const [{ data: client }, { data: intervention }] = await Promise.all([
-    supabase
+    db
       .from("piloto_clients")
       .select("id, civilite, nom, prenom")
       .eq("id", params.id)
       .single(),
-    supabase
+    db
       .from("piloto_interventions")
       .select("*")
       .eq("id", params.interventionId)

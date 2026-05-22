@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +13,8 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL("/login", request.url));
 
-  const { data: modele } = await supabaseAdmin
+  const db = await getDb();
+  const { data: modele } = await db
     .from("piloto_modeles")
     .select("url_storage, nom")
     .eq("id", id)

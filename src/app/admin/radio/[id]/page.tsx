@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { BillingPanel } from "@/components/admin/radio/BillingPanel";
 import { RecurringSupplements } from "@/components/admin/radio/RecurringSupplements";
@@ -8,10 +8,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 
 export default async function FicheRadioPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient();
+  const db = await getDb();
   const [{ data: radio }, { data: tranches }] = await Promise.all([
-    supabase.from("piloto_radios").select("*").eq("id", params.id).single(),
-    supabase
+    db.from("piloto_radios").select("*").eq("id", params.id).single(),
+    db
       .from("piloto_radio_tranches")
       .select("id, tranche_debut, tranche_fin, jours_travailles, tarif_horaire")
       .eq("radio_id", params.id)

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { ClientVoixOffForm } from "@/components/admin/voix-off/ClientVoixOffForm";
 import { modifierClientVoixOff } from "../../actions";
@@ -10,8 +10,8 @@ export default async function ModifierClientVoixOffPage({
 }: {
   params: { id: string };
 }) {
-  const supabase = await createClient();
-  const { data: client } = await supabase
+  const db = await getDb();
+  const { data: client } = await db
     .from("piloto_voixoff_clients")
     .select("*")
     .eq("id", params.id)

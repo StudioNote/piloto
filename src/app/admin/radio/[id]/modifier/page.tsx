@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { modifierRadio } from "../../actions";
 import { notFound } from "next/navigation";
@@ -35,8 +35,8 @@ function Field({
 }
 
 export default async function ModifierRadioPage({ params }: { params: { id: string } }) {
-  const supabase = await createClient();
-  const { data: radio } = await supabase
+  const db = await getDb();
+  const { data: radio } = await db
     .from("piloto_radios")
     .select("id, nom_radio, nom_contact, telephone")
     .eq("id", params.id)

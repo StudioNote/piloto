@@ -31,6 +31,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL!;
+  const DEMO_EMAIL = "demo@anthonychesnier.fr";
 
   const isAdminRoute = pathname.startsWith("/admin");
   const isClientRoute = pathname.startsWith("/client");
@@ -48,7 +49,7 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const isAdmin = user.email === ADMIN_EMAIL;
+  const isAdmin = user.email === ADMIN_EMAIL || user.email === DEMO_EMAIL;
 
   if (isAdminRoute && !isAdmin) {
     const url = request.nextUrl.clone();
