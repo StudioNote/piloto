@@ -10,9 +10,17 @@ interface Supplement {
   montant: number | string;
 }
 
-export function RecurringSupplements({ radioId }: { radioId: string }) {
-  const [supplements, setSupplements] = useState<Supplement[]>([]);
-  const [loading, setLoading] = useState(true);
+export function RecurringSupplements({
+  radioId,
+  initialSupplements,
+  readonly,
+}: {
+  radioId: string;
+  initialSupplements?: Supplement[];
+  readonly?: boolean;
+}) {
+  const [supplements, setSupplements] = useState<Supplement[]>(initialSupplements ?? []);
+  const [loading, setLoading] = useState(!initialSupplements);
   const [saving, setSaving] = useState(false);
   const [label, setLabel] = useState("");
   const [montant, setMontant] = useState("");
@@ -29,7 +37,10 @@ export function RecurringSupplements({ radioId }: { radioId: string }) {
     setLoading(false);
   }
 
-  useEffect(() => { fetchSupplements(); }, [radioId]);
+  useEffect(() => {
+    if (!initialSupplements) fetchSupplements();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [radioId]);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -78,44 +89,48 @@ export function RecurringSupplements({ radioId }: { radioId: string }) {
                 <span className="text-sm font-medium text-gray-900">
                   +{eur(Number(s.montant))}
                 </span>
-                <button
-                  onClick={() => handleDelete(s.id)}
-                  title="Supprimer"
-                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {!readonly && (
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    title="Supprimer"
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <form onSubmit={handleAdd} className="flex gap-2">
-        <input
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="Label (ex: Jeu antenne)"
-          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          type="number"
-          value={montant}
-          onChange={(e) => setMontant(e.target.value)}
-          placeholder="€"
-          step="0.01"
-          min="0"
-          className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          disabled={saving || !label || !montant}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          Ajouter
-        </button>
-      </form>
+      {!readonly && (
+        <form onSubmit={handleAdd} className="flex gap-2">
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Label (ex: Jeu antenne)"
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            value={montant}
+            onChange={(e) => setMontant(e.target.value)}
+            placeholder="€"
+            step="0.01"
+            min="0"
+            className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            disabled={saving || !label || !montant}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Ajouter
+          </button>
+        </form>
+      )}
     </div>
   );
 }

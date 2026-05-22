@@ -56,7 +56,12 @@ interface FactureDetail {
 interface Facture {
   montant: number;
   validee_at: string;
-  detail_json: FactureDetail;
+  detail_json: FactureDetail | null;
+}
+
+interface StoredFacture extends Facture {
+  annee: number;
+  mois: number;
 }
 
 const eur = (n: number, decimals = 0) =>
@@ -65,25 +70,47 @@ const eur = (n: number, decimals = 0) =>
 export function BillingPanel({
   radioId,
   tranches,
+  initialSupplements,
+  initialRemplacements,
+  initialFactures,
+  readonly,
 }: {
   radioId: string;
   tranches: Tranche[];
+  initialSupplements?: DbSupplement[];
+  initialRemplacements?: DbRemplacement[];
+  initialFactures?: StoredFacture[];
+  readonly?: boolean;
 }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [exclusions, setExclusions] = useState<Set<string>>(new Set());
-  const [recurring, setRecurring] = useState<DbSupplement[]>([]);
-  const [remplacements, setRemplacements] = useState<DbRemplacement[]>([]);
+  const [recurring, setRecurring] = useState<DbSupplement[]>(initialSupplements ?? []);
+  const [remplacements, setRemplacements] = useState<DbRemplacement[]>(initialRemplacements ?? []);
   const [oneTime, setOneTime] = useState<OneTimeSupplement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!readonly);
   const [toggling, setToggling] = useState<string | null>(null);
   const [otLabel, setOtLabel] = useState("");
   const [otMontant, setOtMontant] = useState("");
-  const [facture, setFacture] = useState<Facture | null>(null);
+  const [facture, setFacture] = useState<Facture | null>(() => {
+    if (!readonly || !initialFactures) return null;
+    const found = initialFactures.find(
+      (f) => f.annee === now.getFullYear() && f.mois === now.getMonth() + 1,
+    );
+    return found ?? null;
+  });
   const [validating, setValidating] = useState(false);
 
   const fetchData = useCallback(async () => {
+    if (readonly) {
+      const found = (initialFactures ?? []).find(
+        (f) => f.annee === year && f.mois === month + 1,
+      );
+      setFacture(found ?? null);
+      return;
+    }
+
     setLoading(true);
     const supabase = createClient();
     const mm = String(month + 1).padStart(2, "0");
@@ -124,7 +151,7 @@ export function BillingPanel({
     setRemplacements(remplRes.data ?? []);
     setFacture(factureRes.data as Facture | null);
     setLoading(false);
-  }, [radioId, year, month]);
+  }, [radioId, year, month, readonly, initialFactures]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -350,61 +377,65 @@ export function BillingPanel({
             <p className="text-4xl font-bold text-green-800">{eur(Number(facture.montant), 2)}</p>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
-            {facture.detail_json.tranches.map((t, i) => (
-              <div key={i} className="flex justify-between text-gray-600">
-                <span>
-                  {t.tranche_debut}–{t.tranche_fin}{" "}
-                  <span className="text-gray-400">
-                    ({t.worked_days}j × {t.duration_hours}h × {t.tarif_horaire} €)
+          {facture.detail_json && (
+            <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
+              {facture.detail_json.tranches.map((t, i) => (
+                <div key={i} className="flex justify-between text-gray-600">
+                  <span>
+                    {t.tranche_debut}–{t.tranche_fin}{" "}
+                    <span className="text-gray-400">
+                      ({t.worked_days}j × {t.duration_hours}h × {t.tarif_horaire} €)
+                    </span>
                   </span>
-                </span>
-                <span>{eur(t.amount, 2)}</span>
-              </div>
-            ))}
-            {facture.detail_json.recurring.map((s, i) => (
-              <div key={i} className="flex justify-between text-gray-600">
-                <span>
-                  {s.label}{" "}
-                  <span className="text-xs text-gray-400">
-                    {eur(s.montant, 2)} × {s.worked_days}j
+                  <span>{eur(t.amount, 2)}</span>
+                </div>
+              ))}
+              {facture.detail_json.recurring.map((s, i) => (
+                <div key={i} className="flex justify-between text-gray-600">
+                  <span>
+                    {s.label}{" "}
+                    <span className="text-xs text-gray-400">
+                      {eur(s.montant, 2)} × {s.worked_days}j
+                    </span>
                   </span>
-                </span>
-                <span>+{eur(s.total, 2)}</span>
-              </div>
-            ))}
-            {facture.detail_json.remplacements?.map((r, i) => (
-              <div key={i} className="flex justify-between text-gray-600">
-                <span>
-                  {r.label}{" "}
-                  <span className="text-gray-400">
-                    ({r.days_in_month}j × {r.duration_hours}h × {r.tarif_horaire} €)
+                  <span>+{eur(s.total, 2)}</span>
+                </div>
+              ))}
+              {facture.detail_json.remplacements?.map((r, i) => (
+                <div key={i} className="flex justify-between text-gray-600">
+                  <span>
+                    {r.label}{" "}
+                    <span className="text-gray-400">
+                      ({r.days_in_month}j × {r.duration_hours}h × {r.tarif_horaire} €)
+                    </span>
                   </span>
-                </span>
-                <span>{eur(r.amount, 2)}</span>
+                  <span>{eur(r.amount, 2)}</span>
+                </div>
+              ))}
+              {facture.detail_json.one_time.map((s, i) => (
+                <div key={i} className="flex justify-between text-gray-600">
+                  <span>
+                    {s.label} <span className="text-xs text-gray-400">ponctuel</span>
+                  </span>
+                  <span>+{eur(s.montant, 2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-200">
+                <span>Total</span>
+                <span>{eur(Number(facture.montant), 2)}</span>
               </div>
-            ))}
-            {facture.detail_json.one_time.map((s, i) => (
-              <div key={i} className="flex justify-between text-gray-600">
-                <span>
-                  {s.label} <span className="text-xs text-gray-400">ponctuel</span>
-                </span>
-                <span>+{eur(s.montant, 2)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-200">
-              <span>Total</span>
-              <span>{eur(Number(facture.montant), 2)}</span>
             </div>
-          </div>
+          )}
 
-          <button
-            onClick={devaliderMois}
-            disabled={validating}
-            className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
-          >
-            Dévalider ce mois →
-          </button>
+          {!readonly && (
+            <button
+              onClick={devaliderMois}
+              disabled={validating}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+            >
+              Dévalider ce mois →
+            </button>
+          )}
         </div>
       ) : (
         /* ── Vue projection ── */
@@ -498,8 +529,8 @@ export function BillingPanel({
             </div>
           )}
 
-          {/* Chips jours — uniquement si tranches récurrentes */}
-          {tranches.length > 0 && (
+          {/* Chips jours — uniquement si tranches récurrentes et pas en lecture seule */}
+          {tranches.length > 0 && !readonly && (
             <div className="mb-6">
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">
                 Jours prévus — cliquer pour exclure / réintégrer
@@ -558,71 +589,75 @@ export function BillingPanel({
             </div>
           )}
 
-          {/* Suppléments ponctuels */}
-          <div className="border-t border-gray-100 pt-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">
-              Suppléments ponctuels ce mois
-            </p>
-            {oneTime.length > 0 && (
-              <div className="space-y-1.5 mb-3">
-                {oneTime.map((s) => (
-                  <div key={s.key} className="flex items-center justify-between py-1">
-                    <span className="text-sm text-gray-700">{s.label}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-900">+{eur(s.montant, 2)}</span>
-                      <button
-                        onClick={() => setOneTime((prev) => prev.filter((x) => x.key !== s.key))}
-                        className="text-sm text-red-400 hover:text-red-600 leading-none"
-                      >
-                        ×
-                      </button>
+          {/* Suppléments ponctuels — masqués en lecture seule */}
+          {!readonly && (
+            <div className="border-t border-gray-100 pt-5">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">
+                Suppléments ponctuels ce mois
+              </p>
+              {oneTime.length > 0 && (
+                <div className="space-y-1.5 mb-3">
+                  {oneTime.map((s) => (
+                    <div key={s.key} className="flex items-center justify-between py-1">
+                      <span className="text-sm text-gray-700">{s.label}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-900">+{eur(s.montant, 2)}</span>
+                        <button
+                          onClick={() => setOneTime((prev) => prev.filter((x) => x.key !== s.key))}
+                          className="text-sm text-red-400 hover:text-red-600 leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <form onSubmit={addOneTime} className="flex gap-2">
-              <input
-                type="text"
-                value={otLabel}
-                onChange={(e) => setOtLabel(e.target.value)}
-                placeholder="Label (ex: Transport)"
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="number"
-                value={otMontant}
-                onChange={(e) => setOtMontant(e.target.value)}
-                placeholder="€"
-                step="0.01"
-                min="0"
-                className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                disabled={!otLabel || !otMontant}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-900 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                + Ajouter
-              </button>
-            </form>
-          </div>
+                  ))}
+                </div>
+              )}
+              <form onSubmit={addOneTime} className="flex gap-2">
+                <input
+                  type="text"
+                  value={otLabel}
+                  onChange={(e) => setOtLabel(e.target.value)}
+                  placeholder="Label (ex: Transport)"
+                  className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="number"
+                  value={otMontant}
+                  onChange={(e) => setOtMontant(e.target.value)}
+                  placeholder="€"
+                  step="0.01"
+                  min="0"
+                  className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!otLabel || !otMontant}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-900 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                  + Ajouter
+                </button>
+              </form>
+            </div>
+          )}
 
-          {/* Valider ce mois */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <button
-              onClick={validerMois}
-              disabled={validating}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
-            >
-              {validating
-                ? "Validation en cours…"
-                : `Valider ce mois — ${eur(grandTotal, 2)}`}
-            </button>
-            <p className="text-center text-xs text-gray-400 mt-2">
-              Le montant sera figé et ne changera plus.
-            </p>
-          </div>
+          {/* Valider ce mois — masqué en lecture seule */}
+          {!readonly && (
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <button
+                onClick={validerMois}
+                disabled={validating}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+              >
+                {validating
+                  ? "Validation en cours…"
+                  : `Valider ce mois — ${eur(grandTotal, 2)}`}
+              </button>
+              <p className="text-center text-xs text-gray-400 mt-2">
+                Le montant sera figé et ne changera plus.
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>

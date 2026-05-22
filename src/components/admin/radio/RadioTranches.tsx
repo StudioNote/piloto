@@ -33,13 +33,17 @@ const inputCls =
 export function RadioTranches({
   radioId,
   onTrancheChange,
+  initialTranches,
+  readonly,
 }: {
   radioId: string;
   onTrancheChange?: (tranches: Tranche[]) => void;
+  initialTranches?: Tranche[];
+  readonly?: boolean;
 }) {
   const supabase = createClient();
-  const [tranches, setTranches] = useState<Tranche[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tranches, setTranches] = useState<Tranche[]>(initialTranches ?? []);
+  const [loading, setLoading] = useState(!initialTranches);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -60,7 +64,10 @@ export function RadioTranches({
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!initialTranches) load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleJour(j: string) {
     setJours((prev) => (prev.includes(j) ? prev.filter((x) => x !== j) : [...prev, j]));
@@ -97,7 +104,7 @@ export function RadioTranches({
     <div>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-900">Tranches horaires</h3>
-        {!adding && (
+        {!readonly && !adding && (
           <button
             onClick={() => setAdding(true)}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
@@ -107,7 +114,7 @@ export function RadioTranches({
         )}
       </div>
 
-      {adding && (
+      {!readonly && adding && (
         <form
           onSubmit={handleAdd}
           className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4 space-y-4"
@@ -220,13 +227,15 @@ export function RadioTranches({
                   ))}
                 </div>
               </div>
-              <button
-                onClick={() => handleDelete(t.id)}
-                title="Supprimer"
-                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors ml-2 shrink-0"
-              >
-                <Trash2 size={16} />
-              </button>
+              {!readonly && (
+                <button
+                  onClick={() => handleDelete(t.id)}
+                  title="Supprimer"
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors ml-2 shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           ))}
         </div>

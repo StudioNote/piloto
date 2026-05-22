@@ -42,11 +42,19 @@ const eur = (n: number) =>
 const inputCls =
   "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
 
-export function RadioRemplacements({ radioId }: { radioId: string }) {
+export function RadioRemplacements({
+  radioId,
+  initialRemplacements,
+  readonly,
+}: {
+  radioId: string;
+  initialRemplacements?: Remplacement[];
+  readonly?: boolean;
+}) {
   const supabase = createClient();
 
-  const [remplacements, setRemplacements] = useState<Remplacement[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [remplacements, setRemplacements] = useState<Remplacement[]>(initialRemplacements ?? []);
+  const [loading, setLoading] = useState(!initialRemplacements);
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -73,7 +81,10 @@ export function RadioRemplacements({ radioId }: { radioId: string }) {
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!initialRemplacements) load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function resetForm() {
     setDateDebut("");
@@ -112,7 +123,7 @@ export function RadioRemplacements({ radioId }: { radioId: string }) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-gray-900">Remplacements</h3>
-        {!adding && (
+        {!readonly && !adding && (
           <button
             onClick={() => setAdding(true)}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
@@ -122,7 +133,7 @@ export function RadioRemplacements({ radioId }: { radioId: string }) {
         )}
       </div>
 
-      {adding && (
+      {!readonly && adding && (
         <form
           onSubmit={handleAdd}
           className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-4 space-y-4"
@@ -275,13 +286,15 @@ export function RadioRemplacements({ radioId }: { radioId: string }) {
                 </div>
                 <div className="flex items-center gap-4 ml-4 shrink-0">
                   <span className="font-semibold text-gray-900">{eur(a)}</span>
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    title="Supprimer"
-                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {!readonly && (
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      title="Supprimer"
+                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             );
