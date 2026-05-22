@@ -2,9 +2,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { AgendaCalendar } from "@/components/admin/agenda/AgendaCalendar";
 import { CopyLinkButton } from "@/components/admin/agenda/CopyLinkButton";
-import { regenererTokenCal } from "./actions";
+import { RegenerateTokenButton } from "@/components/admin/agenda/RegenerateTokenButton";
 import Link from "next/link";
-import { Calendar, RotateCcw } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { randomBytes } from "crypto";
 import { headers } from "next/headers";
 
@@ -231,23 +231,7 @@ export default async function AgendaPage({
           <CopyLinkButton url={calUrl} />
         </div>
 
-        <form action={regenererTokenCal}>
-          <button
-            type="submit"
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-rose-600 border border-gray-200 px-3 py-2 rounded-lg transition-colors"
-            onClick={(e) => {
-              if (
-                !confirm(
-                  "Régénérer le lien ? L'ancien lien ne fonctionnera plus. Vous devrez mettre à jour l'abonnement dans Calendrier."
-                )
-              )
-                e.preventDefault();
-            }}
-          >
-            <RotateCcw size={14} />
-            Régénérer le lien
-          </button>
-        </form>
+        <RegenerateTokenButton />
       </section>
     </div>
   );
