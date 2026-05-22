@@ -4,10 +4,11 @@ import { creerRendezVous } from "../actions";
 export default async function NouveauRdvPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; heure?: string }>;
 }) {
   const sp = await searchParams;
   const dateDefaut = sp.date ?? new Date().toISOString().slice(0, 10);
+  const heureDefaut = sp.heure ?? "";
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10">
@@ -78,6 +79,7 @@ export default async function NouveauRdvPage({
                 type="time"
                 name="heure_debut"
                 required
+                defaultValue={heureDefaut}
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
               />
             </div>

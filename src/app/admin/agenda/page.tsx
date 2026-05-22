@@ -8,15 +8,34 @@ import { Calendar, MapPin } from "lucide-react";
 import { randomBytes } from "crypto";
 import { headers } from "next/headers";
 
+function getMondayOfWeek(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const dow = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - dow);
+  return d.toISOString().slice(0, 10);
+}
+
+function dateAddDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ mois?: string }>;
+  searchParams: Promise<{ mois?: string; vue?: string; date?: string }>;
 }) {
   const sp = await searchParams;
 
+  const vue =
+    sp.vue === "semaine" || sp.vue === "jour" ? sp.vue : "mois";
+  const today = new Date().toISOString().slice(0, 10);
+  const date = sp.date ?? today;
   const mois =
-    sp.mois ?? new Date().toISOString().slice(0, 7);
+    sp.mois ?? (vue === "mois" ? today.slice(0, 7) : date.slice(0, 7));
+  const semaineStart = getMondayOfWeek(vue === "mois" ? today : date);
+
   const [year, month] = mois.split("-").map(Number);
   const lastDay = new Date(year, month, 0).getDate();
 
@@ -36,16 +55,28 @@ export default async function AgendaPage({
     tokenRow = { token };
   }
 
-  // RDV du mois affiché
-  const { data: rdvMois } = await supabaseAdmin
+  // RDV pour la vue active
+  let fetchStart: string;
+  let fetchEnd: string;
+  if (vue === "semaine") {
+    fetchStart = semaineStart;
+    fetchEnd = dateAddDays(semaineStart, 6);
+  } else if (vue === "jour") {
+    fetchStart = date;
+    fetchEnd = date;
+  } else {
+    fetchStart = `${mois}-01`;
+    fetchEnd = `${mois}-${String(lastDay).padStart(2, "0")}`;
+  }
+
+  const { data: rdvView } = await supabaseAdmin
     .from("piloto_rendezvous")
     .select("*")
-    .gte("date", `${mois}-01`)
-    .lte("date", `${mois}-${String(lastDay).padStart(2, "0")}`)
+    .gte("date", fetchStart)
+    .lte("date", fetchEnd)
     .order("heure_debut");
 
   // RDV des 7 prochains jours (depuis aujourd'hui)
-  const today = new Date().toISOString().slice(0, 10);
   const todayPlus7 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
@@ -96,9 +127,15 @@ export default async function AgendaPage({
         </Link>
       </div>
 
-      {/* Calendrier mensuel */}
+      {/* Calendrier (vue active) */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-8">
-        <AgendaCalendar rendezVous={rdvMois ?? []} mois={mois} />
+        <AgendaCalendar
+          rendezVous={rdvView ?? []}
+          vue={vue}
+          mois={mois}
+          date={date}
+          semaineStart={semaineStart}
+        />
       </div>
 
       {/* Prochains RDV (7 jours) */}
