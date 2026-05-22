@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { RadiosList } from "@/components/admin/radio/RadiosList";
 import Link from "next/link";
@@ -8,16 +8,16 @@ export default async function RadioPage({
 }: {
   searchParams: { annee?: string };
 }) {
-  const supabase = await createClient();
+  const db = await getDb();
 
   const currentYear = Number(searchParams.annee) || new Date().getFullYear();
 
   const [{ data: radios }, { data: factures }] = await Promise.all([
-    supabase
+    db
       .from("piloto_radios")
       .select("id, nom_radio, nom_contact, telephone")
       .order("nom_radio"),
-    supabase
+    db
       .from("piloto_radio_factures")
       .select("montant")
       .eq("annee", currentYear),

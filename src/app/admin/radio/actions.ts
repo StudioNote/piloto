@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { supabaseForEmail, DEMO_EMAIL } from "@/lib/getDb";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -11,13 +12,15 @@ async function assertAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) throw new Error("Non autorisé");
-  return supabase;
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
+  return supabaseForEmail(user.email!);
 }
 
 export async function creerRadio(formData: FormData) {
-  const supabase = await assertAdmin();
-  const { error } = await supabase.from("piloto_radios").insert({
+  const db = await assertAdmin();
+  const { error } = await db.from("piloto_radios").insert({
     nom_radio: formData.get("nom_radio") as string,
     nom_contact: (formData.get("nom_contact") as string) || null,
     telephone: (formData.get("telephone") as string) || null,
@@ -27,9 +30,9 @@ export async function creerRadio(formData: FormData) {
 }
 
 export async function modifierRadio(formData: FormData) {
-  const supabase = await assertAdmin();
+  const db = await assertAdmin();
   const id = formData.get("id") as string;
-  const { error } = await supabase
+  const { error } = await db
     .from("piloto_radios")
     .update({
       nom_radio: formData.get("nom_radio") as string,

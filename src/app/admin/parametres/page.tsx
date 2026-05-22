@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { changerMotDePasse, sauvegarderInfos } from "./actions";
 
@@ -9,7 +9,8 @@ export default async function ParametresPage({
 }) {
   const sp = await searchParams;
 
-  const { data: params } = await supabaseAdmin
+  const db = await getDb();
+  const { data: params } = await db
     .from("piloto_parametres")
     .select("*")
     .eq("id", "singleton")

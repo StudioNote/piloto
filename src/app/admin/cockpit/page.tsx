@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb, getUserEmail, isDemoUser } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { getStripeCAByPeriod, getStripeCAByYear, getStudioNoteInstant } from "@/lib/stripe-data";
 import Link from "next/link";
@@ -122,7 +122,9 @@ export default async function CockpitPage({
 }: {
   searchParams: { vue?: string; mois?: string; annee?: string };
 }) {
-  const supabase = await createClient();
+  const db = await getDb();
+  const email = await getUserEmail();
+  const isDemo = isDemoUser(email);
 
   const vue = searchParams.vue === "annuelle" ? "annuelle" : "mensuelle";
   const currentMois = searchParams.mois ?? new Date().toISOString().slice(0, 7);
@@ -149,15 +151,15 @@ export default async function CockpitPage({
     const endTs = Math.floor(new Date(year, month, 1).getTime() / 1000) - 1;
 
     const [sos, builder, voixoff, radio, stripeData] = await Promise.all([
-      supabase.from("piloto_interventions").select("montant")
+      db.from("piloto_interventions").select("montant")
         .gte("date", debutMois).lte("date", finMois),
-      supabase.from("piloto_builder_prestations").select("montant")
+      db.from("piloto_builder_prestations").select("montant")
         .gte("date", debutMois).lte("date", finMois),
-      supabase.from("piloto_voixoff_prestations").select("montant")
+      db.from("piloto_voixoff_prestations").select("montant")
         .gte("date", debutMois).lte("date", finMois),
-      supabase.from("piloto_radio_factures").select("montant")
+      db.from("piloto_radio_factures").select("montant")
         .eq("annee", year).eq("mois", month),
-      getStripeCAByPeriod(startTs, endTs),
+      isDemo ? { swipcode: 0, studionote: 0, error: false } : await getStripeCAByPeriod(startTs, endTs),
     ]);
 
     sosTotal = sumMontants(sos.data ?? []);
@@ -166,18 +168,20 @@ export default async function CockpitPage({
     radioTotal = sumMontants(radio.data ?? []);
     swipcodeTotal = stripeData.swipcode;
     studionoteTotal = stripeData.studionote;
-    if (stripeData.error) stripeUnavailable = true;
+    stripeUnavailable = isDemo || (stripeData.error ? true : false);
   } else {
     const [sos, builder, voixoff, radio, stripeYear] = await Promise.all([
-      supabase.from("piloto_interventions").select("date, montant")
+      db.from("piloto_interventions").select("date, montant")
         .gte("date", debutAnnee).lte("date", finAnnee),
-      supabase.from("piloto_builder_prestations").select("date, montant")
+      db.from("piloto_builder_prestations").select("date, montant")
         .gte("date", debutAnnee).lte("date", finAnnee),
-      supabase.from("piloto_voixoff_prestations").select("date, montant")
+      db.from("piloto_voixoff_prestations").select("date, montant")
         .gte("date", debutAnnee).lte("date", finAnnee),
-      supabase.from("piloto_radio_factures").select("mois, montant")
+      db.from("piloto_radio_factures").select("mois, montant")
         .eq("annee", currentAnnee),
-      getStripeCAByYear(currentAnnee),
+      isDemo
+        ? { annual: { swipcode: 0, studionote: 0 }, monthly: { swipcode: new Array(12).fill(0), studionote: new Array(12).fill(0) }, error: false }
+        : await getStripeCAByYear(currentAnnee),
     ]);
 
     const sosData = sos.data ?? [];
@@ -191,7 +195,7 @@ export default async function CockpitPage({
     radioTotal = radioData.reduce((acc, r) => acc + Number(r.montant ?? 0), 0);
     swipcodeTotal = stripeYear.annual.swipcode;
     studionoteTotal = stripeYear.annual.studionote;
-    if (stripeYear.error) stripeUnavailable = true;
+    stripeUnavailable = isDemo || (stripeYear.error ? true : false);
 
     byMonth = {
       sos: aggregateByMonth(sosData),
@@ -203,7 +207,7 @@ export default async function CockpitPage({
     };
   }
 
-  const studioNoteInstant = await getStudioNoteInstant();
+  const studioNoteInstant = isDemo ? { mrr: 0, subscribers: 0, error: true } : await getStudioNoteInstant();
 
   const grandTotal =
     sosTotal + builderTotal + voixoffTotal + radioTotal + swipcodeTotal + studionoteTotal;

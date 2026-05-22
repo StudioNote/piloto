@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { VoixOffClientsList } from "@/components/admin/voix-off/VoixOffClientsList";
 import Link from "next/link";
@@ -28,7 +28,7 @@ export default async function VoixOffPage({
 }: {
   searchParams: { mois?: string; annee?: string };
 }) {
-  const supabase = await createClient();
+  const db = await getDb();
 
   const currentMois =
     searchParams.mois ?? new Date().toISOString().slice(0, 7);
@@ -46,16 +46,16 @@ export default async function VoixOffPage({
     { data: prestationsMois },
     { data: prestationsAnnee },
   ] = await Promise.all([
-    supabase
+    db
       .from("piloto_voixoff_clients")
       .select("id, nom, prenom, societe, telephone")
       .order("nom"),
-    supabase
+    db
       .from("piloto_voixoff_prestations")
       .select("montant")
       .gte("date", debutMois)
       .lte("date", finMois),
-    supabase
+    db
       .from("piloto_voixoff_prestations")
       .select("montant")
       .gte("date", debutAnnee)

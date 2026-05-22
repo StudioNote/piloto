@@ -1,9 +1,10 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { ModelesList } from "@/components/admin/modeles/ModelesList";
 
 export default async function ModelesPage() {
-  const { data: modeles } = await supabaseAdmin
+  const db = await getDb();
+  const { data: modeles } = await db
     .from("piloto_modeles")
     .select("*")
     .order("created_at", { ascending: false });

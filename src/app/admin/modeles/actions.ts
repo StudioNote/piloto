@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseForEmail, DEMO_EMAIL, getUserEmail, isDemoUser } from "@/lib/getDb";
 import { revalidatePath } from "next/cache";
 
 const ADMIN_EMAIL = "contact@anthonychesnier.fr";
@@ -9,14 +10,19 @@ const ADMIN_EMAIL = "contact@anthonychesnier.fr";
 async function assertAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) throw new Error("Non autorisé");
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
+  return supabaseForEmail(user.email!);
 }
 
 export async function ajouterModele(
   _prevState: { error?: string } | null,
   formData: FormData
 ): Promise<{ error?: string }> {
-  await assertAdmin();
+  const db = await assertAdmin();
+  const email = await getUserEmail();
+  if (isDemoUser(email)) return { error: "Upload non disponible en mode démonstration." };
 
   const file = formData.get("fichier") as File | null;
   const nom = ((formData.get("nom") as string) ?? "").trim();
@@ -35,7 +41,7 @@ export async function ajouterModele(
     .upload(path, bytes, { contentType: file.type, upsert: false });
   if (uploadError) return { error: uploadError.message };
 
-  const { error: dbError } = await supabaseAdmin.from("piloto_modeles").insert({
+  const { error: dbError } = await db.from("piloto_modeles").insert({
     nom,
     description,
     url_storage: path,
@@ -51,13 +57,15 @@ export async function ajouterModele(
 }
 
 export async function supprimerModele(formData: FormData) {
-  await assertAdmin();
+  const db = await assertAdmin();
+  const email = await getUserEmail();
+  if (isDemoUser(email)) return;
 
   const id = formData.get("id") as string;
   const path = formData.get("path") as string;
 
   await supabaseAdmin.storage.from("piloto-modeles").remove([path]);
-  await supabaseAdmin.from("piloto_modeles").delete().eq("id", id);
+  await db.from("piloto_modeles").delete().eq("id", id);
 
   revalidatePath("/admin/modeles");
 }

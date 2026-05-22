@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseForEmail, DEMO_EMAIL } from "@/lib/getDb";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -12,17 +12,19 @@ async function assertAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) throw new Error("Non autorisé");
-  return supabase;
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
+  return supabaseForEmail(user.email!);
 }
 
 export async function creerProspect(formData: FormData) {
-  await assertAdmin();
+  const db = await assertAdmin();
   const societe = (formData.get("societe") as string) || null;
   const nom = (formData.get("nom") as string) || null;
   if (!societe && !nom) throw new Error("Renseignez au moins la société ou le nom.");
   const montantRaw = formData.get("montant_estime") as string;
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from("piloto_builder_prospects")
     .insert({
       societe,
@@ -46,13 +48,13 @@ export async function creerProspect(formData: FormData) {
 }
 
 export async function modifierProspect(formData: FormData) {
-  await assertAdmin();
+  const db = await assertAdmin();
   const id = formData.get("id") as string;
   const societe = (formData.get("societe") as string) || null;
   const nom = (formData.get("nom") as string) || null;
   if (!societe && !nom) throw new Error("Renseignez au moins la société ou le nom.");
   const montantRaw = formData.get("montant_estime") as string;
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from("piloto_builder_prospects")
     .update({
       societe,
@@ -76,8 +78,8 @@ export async function modifierProspect(formData: FormData) {
 }
 
 export async function supprimerProspect(id: string) {
-  await assertAdmin();
-  const { error } = await supabaseAdmin
+  const db = await assertAdmin();
+  const { error } = await db
     .from("piloto_builder_prospects")
     .delete()
     .eq("id", id);
@@ -87,8 +89,8 @@ export async function supprimerProspect(id: string) {
 }
 
 export async function changerStatutProspect(id: string, statut: string) {
-  await assertAdmin();
-  const { error } = await supabaseAdmin
+  const db = await assertAdmin();
+  const { error } = await db
     .from("piloto_builder_prospects")
     .update({ statut })
     .eq("id", id);
@@ -98,9 +100,9 @@ export async function changerStatutProspect(id: string, statut: string) {
 }
 
 export async function convertirEnClient(prospectId: string) {
-  await assertAdmin();
+  const db = await assertAdmin();
 
-  const { data: prospect, error: fetchError } = await supabaseAdmin
+  const { data: prospect, error: fetchError } = await db
     .from("piloto_builder_prospects")
     .select("*")
     .eq("id", prospectId)
@@ -111,7 +113,7 @@ export async function convertirEnClient(prospectId: string) {
     redirect(`/admin/builder/${prospect.converted_client_id}`);
   }
 
-  const { data: client, error: clientError } = await supabaseAdmin
+  const { data: client, error: clientError } = await db
     .from("piloto_builder_clients")
     .insert({
       societe: prospect.societe,
@@ -126,7 +128,7 @@ export async function convertirEnClient(prospectId: string) {
 
   if (clientError) throw new Error(clientError.message);
 
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await db
     .from("piloto_builder_prospects")
     .update({ statut: "gagne", converted_client_id: client.id })
     .eq("id", prospectId);

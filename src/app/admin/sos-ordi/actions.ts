@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseForEmail, DEMO_EMAIL, getUserEmail, isDemoUser } from "@/lib/getDb";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -12,13 +13,15 @@ async function assertAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) throw new Error("Non autorisé");
-  return supabase;
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
+  return supabaseForEmail(user.email!);
 }
 
 export async function creerClient(formData: FormData) {
-  const supabase = await assertAdmin();
-  const { error } = await supabase.from("piloto_clients").insert({
+  const db = await assertAdmin();
+  const { error } = await db.from("piloto_clients").insert({
     civilite: (formData.get("civilite") as string) || null,
     nom: formData.get("nom") as string,
     prenom: formData.get("prenom") as string,
@@ -31,9 +34,9 @@ export async function creerClient(formData: FormData) {
 }
 
 export async function modifierClient(formData: FormData) {
-  const supabase = await assertAdmin();
+  const db = await assertAdmin();
   const id = formData.get("id") as string;
-  const { error } = await supabase
+  const { error } = await db
     .from("piloto_clients")
     .update({
       civilite: (formData.get("civilite") as string) || null,
@@ -50,12 +53,12 @@ export async function modifierClient(formData: FormData) {
 }
 
 export async function modifierIntervention(formData: FormData) {
-  const supabase = await assertAdmin();
+  const db = await assertAdmin();
   const id = formData.get("id") as string;
   const clientId = formData.get("client_id") as string;
   const dureeRaw = formData.get("duree_minutes") as string;
   const montantRaw = formData.get("montant") as string;
-  const { error } = await supabase
+  const { error } = await db
     .from("piloto_interventions")
     .update({
       date: formData.get("date") as string,
@@ -71,11 +74,11 @@ export async function modifierIntervention(formData: FormData) {
 }
 
 export async function creerIntervention(formData: FormData) {
-  const supabase = await assertAdmin();
+  const db = await assertAdmin();
   const clientId = formData.get("client_id") as string;
   const dureeRaw = formData.get("duree_minutes") as string;
   const montantRaw = formData.get("montant") as string;
-  const { error } = await supabase.from("piloto_interventions").insert({
+  const { error } = await db.from("piloto_interventions").insert({
     client_id: clientId,
     date: formData.get("date") as string,
     duree_minutes: dureeRaw ? parseInt(dureeRaw, 10) : null,
@@ -95,6 +98,8 @@ export async function deposerDocument(
   formData: FormData
 ): Promise<{ error?: string }> {
   await assertAdmin();
+  const email = await getUserEmail();
+  if (isDemoUser(email)) return { error: "Stockage non disponible en mode démonstration." };
   const file = formData.get("fichier") as File | null;
   const clientId = formData.get("client_id") as string;
   const description = (formData.get("description") as string) || null;
@@ -127,6 +132,8 @@ export async function deposerDocument(
 
 export async function supprimerDocument(formData: FormData) {
   await assertAdmin();
+  const email = await getUserEmail();
+  if (isDemoUser(email)) return;
   const id = formData.get("id") as string;
   const clientId = formData.get("client_id") as string;
   const path = formData.get("path") as string;
@@ -151,6 +158,8 @@ export async function creerAccesClient(
   formData: FormData
 ): Promise<AccessState> {
   await assertAdmin();
+  const currentUserEmail = await getUserEmail();
+  if (isDemoUser(currentUserEmail)) return { error: "Fonctionnalité non disponible en mode démonstration." };
   const clientId = formData.get("client_id") as string;
   const email = formData.get("email") as string;
 
@@ -180,6 +189,8 @@ export async function regenererMotDePasse(
   formData: FormData
 ): Promise<AccessState> {
   await assertAdmin();
+  const email = await getUserEmail();
+  if (isDemoUser(email)) return { error: "Fonctionnalité non disponible en mode démonstration." };
   const authUserId = formData.get("auth_user_id") as string;
   const clientId = formData.get("client_id") as string;
 

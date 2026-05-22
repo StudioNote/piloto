@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseForEmail, DEMO_EMAIL } from "@/lib/getDb";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -10,12 +10,18 @@ const ADMIN_EMAIL = "contact@anthonychesnier.fr";
 async function assertAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) throw new Error("Non autorisé");
-  return supabase;
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
+  return supabaseForEmail(user.email!);
 }
 
 export async function changerMotDePasse(formData: FormData) {
-  const supabase = await assertAdmin();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
   const mdp = (formData.get("mot_de_passe") as string) ?? "";
   const confirm = (formData.get("confirmation") as string) ?? "";
 
@@ -29,9 +35,9 @@ export async function changerMotDePasse(formData: FormData) {
 }
 
 export async function sauvegarderInfos(formData: FormData) {
-  await assertAdmin();
+  const db = await assertAdmin();
 
-  const { error } = await supabaseAdmin.from("piloto_parametres").upsert({
+  const { error } = await db.from("piloto_parametres").upsert({
     id: "singleton",
     raison_sociale: (formData.get("raison_sociale") as string) || null,
     siret: (formData.get("siret") as string) || null,

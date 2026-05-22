@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { supabaseForEmail, DEMO_EMAIL } from "@/lib/getDb";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -11,17 +12,19 @@ async function assertAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) throw new Error("Non autorisé");
-  return supabase;
+  if (!user || (user.email !== ADMIN_EMAIL && user.email !== DEMO_EMAIL)) {
+    throw new Error("Non autorisé");
+  }
+  return supabaseForEmail(user.email!);
 }
 
 export async function creerClientBuilder(formData: FormData) {
-  const supabase = await assertAdmin();
+  const db = await assertAdmin();
   const societe = (formData.get("societe") as string) || null;
   const nom = (formData.get("nom") as string) || null;
   const prenom = (formData.get("prenom") as string) || null;
   if (!societe && !nom) throw new Error("Renseignez au moins la société ou le nom.");
-  const { error } = await supabase.from("piloto_builder_clients").insert({
+  const { error } = await db.from("piloto_builder_clients").insert({
     societe,
     nom,
     prenom,
@@ -34,13 +37,13 @@ export async function creerClientBuilder(formData: FormData) {
 }
 
 export async function modifierClientBuilder(formData: FormData) {
-  const supabase = await assertAdmin();
+  const db = await assertAdmin();
   const id = formData.get("id") as string;
   const societe = (formData.get("societe") as string) || null;
   const nom = (formData.get("nom") as string) || null;
   const prenom = (formData.get("prenom") as string) || null;
   if (!societe && !nom) throw new Error("Renseignez au moins la société ou le nom.");
-  const { error } = await supabase
+  const { error } = await db
     .from("piloto_builder_clients")
     .update({
       societe,
@@ -57,10 +60,10 @@ export async function modifierClientBuilder(formData: FormData) {
 }
 
 export async function creerPrestationBuilder(formData: FormData) {
-  const supabase = await assertAdmin();
+  const db = await assertAdmin();
   const clientId = formData.get("client_id") as string;
   const montantRaw = formData.get("montant") as string;
-  const { error } = await supabase.from("piloto_builder_prestations").insert({
+  const { error } = await db.from("piloto_builder_prestations").insert({
     client_id: clientId,
     date: formData.get("date") as string,
     description: (formData.get("description") as string) || null,
