@@ -28,8 +28,8 @@ export default function LoginPage() {
       return;
     }
 
-    const ADMIN_EMAIL = "contact@anthonychesnier.fr";
-    router.push(email === ADMIN_EMAIL ? "/admin" : "/client");
+    const ADMIN_EMAILS = ["contact@anthonychesnier.fr", "demo@anthonychesnier.fr"];
+    router.push(ADMIN_EMAILS.includes(email) ? "/admin" : "/client");
   }
 
   return (
