@@ -1,7 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { supabaseForEmail, DEMO_EMAIL } from "@/lib/getDb";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { supabaseForEmail, DEMO_EMAIL, getUserEmail, isDemoUser } from "@/lib/getDb";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -54,4 +55,71 @@ export async function sauvegarderInfos(formData: FormData) {
 
   revalidatePath("/admin/parametres");
   redirect("/admin/parametres?succes=infos");
+}
+
+export async function uploadLogo(formData: FormData): Promise<{ error?: string }> {
+  const db = await assertAdmin();
+  const email = await getUserEmail();
+  if (isDemoUser(email)) return { error: "Upload non disponible en mode démonstration." };
+
+  const file = formData.get("logo") as File | null;
+  if (!file || file.size === 0) return { error: "Aucun fichier sélectionné." };
+  if (!["image/png", "image/jpeg"].includes(file.type)) return { error: "PNG ou JPG uniquement." };
+  if (file.size > 2 * 1024 * 1024) return { error: "Fichier trop lourd (2 Mo max)." };
+
+  const { data: par } = await db
+    .from("piloto_parametres")
+    .select("logo_path")
+    .eq("id", "singleton")
+    .single();
+  const oldPath = (par as { logo_path?: string | null } | null)?.logo_path ?? null;
+
+  const ext = file.type === "image/png" ? "png" : "jpg";
+  const newPath = `logos/logo_${Date.now()}.${ext}`;
+
+  const bytes = await file.arrayBuffer();
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from("piloto-branding")
+    .upload(newPath, bytes, { contentType: file.type, upsert: false });
+  if (uploadError) return { error: uploadError.message };
+
+  if (oldPath) {
+    await supabaseAdmin.storage.from("piloto-branding").remove([oldPath]);
+  }
+
+  await db.from("piloto_parametres").upsert({
+    id: "singleton",
+    logo_path: newPath,
+    updated_at: new Date().toISOString(),
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/parametres");
+  return {};
+}
+
+export async function supprimerLogo(): Promise<void> {
+  const db = await assertAdmin();
+  const email = await getUserEmail();
+  if (isDemoUser(email)) return;
+
+  const { data: par } = await db
+    .from("piloto_parametres")
+    .select("logo_path")
+    .eq("id", "singleton")
+    .single();
+  const oldPath = (par as { logo_path?: string | null } | null)?.logo_path ?? null;
+
+  if (oldPath) {
+    await supabaseAdmin.storage.from("piloto-branding").remove([oldPath]);
+  }
+
+  await db.from("piloto_parametres").upsert({
+    id: "singleton",
+    logo_path: null,
+    updated_at: new Date().toISOString(),
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/parametres");
 }

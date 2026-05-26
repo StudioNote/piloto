@@ -3,15 +3,23 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { DemoBanner } from "@/components/admin/DemoBanner";
-import { DEMO_EMAIL } from "@/lib/getDb";
+import { DEMO_EMAIL, supabaseForEmail } from "@/lib/getDb";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const db = supabaseForEmail(user.email!);
+  const { data: par } = await db
+    .from("piloto_parametres")
+    .select("logo_path")
+    .eq("id", "singleton")
+    .single();
+  const logoPath = (par as { logo_path?: string | null } | null)?.logo_path ?? null;
+  const logoUrl = logoPath
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/piloto-branding/${logoPath}`
+    : null;
 
   async function signOut() {
     "use server";
@@ -24,8 +32,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-screen bg-[#F8FAFC]">
       <nav className="bg-white border-b border-gray-100 shadow-sm px-6 flex items-stretch justify-between">
         <div className="flex items-stretch gap-0.5">
-          <Link href="/admin" className="flex items-center text-lg font-bold text-gray-900 pr-5 mr-2">
-            Piloto
+          <Link href="/admin" className="flex items-center pr-5 mr-2">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="h-8 w-auto max-w-[140px] object-contain"
+              />
+            ) : (
+              <span className="text-lg font-bold text-gray-900">Piloto</span>
+            )}
           </Link>
           <AdminNav />
         </div>

@@ -4,6 +4,7 @@ import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseForEmail, DEMO_EMAIL, ADMIN_EMAIL } from "@/lib/getDb";
 import { DevisPDF } from "@/components/admin/devis/DevisPDF";
+import { getLogoDataUrl } from "@/lib/logoUtils";
 
 export async function GET(
   _req: NextRequest,
@@ -17,7 +18,6 @@ export async function GET(
     return new Response("Non autorisé", { status: 401 });
   }
 
-  // db proxy gère automatiquement le préfixe demo_ si besoin
   const db = supabaseForEmail(user.email);
 
   const [{ data: devis }, { data: lignes }, { data: par }] = await Promise.all([
@@ -29,6 +29,9 @@ export async function GET(
   if (!devis) return new Response("Devis introuvable", { status: 404 });
 
   const parExt = par as Record<string, unknown> | null;
+  const logoPath = parExt?.logo_path as string | null ?? null;
+  const logoDataUrl = await getLogoDataUrl(logoPath);
+
   const prestataire = {
     raison_sociale: par?.raison_sociale ?? null,
     siret: par?.siret ?? null,
@@ -41,7 +44,7 @@ export async function GET(
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const element = React.createElement(DevisPDF, { devis, lignes: lignes ?? [], prestataire }) as any;
+  const element = React.createElement(DevisPDF, { devis, lignes: lignes ?? [], prestataire, logoDataUrl }) as any;
   const buffer = await renderToBuffer(element);
   const uint8 = new Uint8Array(buffer);
 

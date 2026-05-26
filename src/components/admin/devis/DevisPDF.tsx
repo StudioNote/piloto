@@ -3,6 +3,7 @@ import {
   Page,
   View,
   Text,
+  Image,
   StyleSheet,
 } from "@react-pdf/renderer";
 
@@ -101,6 +102,8 @@ const s = StyleSheet.create({
   bpaRow: { flexDirection: "row", gap: 40, marginTop: 8 },
   bpaLine: { flex: 1, borderBottomWidth: 1, borderBottomColor: GRAY },
   bpaLineLabel: { fontSize: 8, color: GRAY, marginBottom: 2 },
+  // Logo
+  logo: { maxHeight: 48, maxWidth: 160, marginBottom: 6, objectFit: "contain" },
 });
 
 //   = narrow no-break space,   = non-breaking space — not rendered by @react-pdf fonts
@@ -128,10 +131,12 @@ export function DevisPDF({
   devis,
   lignes,
   prestataire,
+  logoDataUrl,
 }: {
   devis: DevisData;
   lignes: Ligne[];
   prestataire: Prestataire;
+  logoDataUrl?: string | null;
 }) {
   const totalLignes = lignes.reduce((s, l) => s + Number(l.total_ligne), 0);
   const avecRemise = devis.remise_montant > 0;
@@ -143,6 +148,10 @@ export function DevisPDF({
         {/* ── En-tête ── */}
         <View style={s.header}>
           <View style={s.headerLeft}>
+            {logoDataUrl && (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image src={logoDataUrl} style={s.logo} />
+            )}
             <Text style={s.companyName}>{prestataire.raison_sociale ?? ""}</Text>
             {prestataire.adresse && <Text style={s.companyInfo}>{prestataire.adresse}</Text>}
             {prestataire.cp_ville && <Text style={s.companyInfo}>{prestataire.cp_ville}</Text>}

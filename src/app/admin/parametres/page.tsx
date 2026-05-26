@@ -2,6 +2,7 @@ import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { changerMotDePasse, sauvegarderInfos } from "./actions";
 import { CatalogueDevis } from "@/components/admin/parametres/CatalogueDevis";
+import { LogoUpload } from "@/components/admin/parametres/LogoUpload";
 
 export default async function ParametresPage({
   searchParams,
@@ -15,6 +16,13 @@ export default async function ParametresPage({
     db.from("piloto_parametres").select("*").eq("id", "singleton").single(),
     db.from("piloto_devis_catalogue").select("*").order("ordre", { ascending: true }),
   ]);
+
+  const paramsExt = params as { logo_path?: string | null } | null;
+  const logoPath = paramsExt?.logo_path ?? null;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const currentLogoUrl = logoPath
+    ? `${supabaseUrl}/storage/v1/object/public/piloto-branding/${logoPath}`
+    : null;
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -194,6 +202,18 @@ export default async function ParametresPage({
             Sauvegarder
           </button>
         </form>
+      </section>
+
+      {/* Logo */}
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+          <h2 className="text-base font-semibold text-gray-800">Logo</h2>
+        </div>
+        <p className="text-xs text-gray-400 mb-5">
+          Affiché dans l&apos;interface admin et intégré dans les PDF de devis.
+        </p>
+        <LogoUpload currentLogoUrl={currentLogoUrl} />
       </section>
 
       {/* Catalogue devis */}
