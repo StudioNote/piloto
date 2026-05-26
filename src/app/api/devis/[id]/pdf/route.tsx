@@ -28,13 +28,15 @@ export async function GET(
 
   if (!devis) return new Response("Devis introuvable", { status: 404 });
 
+  const parExt = par as Record<string, unknown> | null;
   const prestataire = {
     raison_sociale: par?.raison_sociale ?? null,
     siret: par?.siret ?? null,
     adresse: par?.adresse ?? null,
+    cp_ville: parExt?.cp_ville as string | null ?? null,
     telephone: par?.telephone ?? null,
     email: par?.email ?? null,
-    site_web: (par as Record<string, unknown> | null)?.site_web as string | null ?? null,
+    site_web: parExt?.site_web as string | null ?? null,
     mentions: par?.mentions ?? null,
   };
 

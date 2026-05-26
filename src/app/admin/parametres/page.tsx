@@ -128,11 +128,21 @@ export default async function ParametresPage({
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1.5">Adresse</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Adresse (rue)</label>
             <input
               type="text"
               name="adresse"
               defaultValue={params?.adresse ?? ""}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Code postal et ville</label>
+            <input
+              type="text"
+              name="cp_ville"
+              defaultValue={(params as { cp_ville?: string } | null)?.cp_ville ?? ""}
+              placeholder="ex. 29170 Fouesnant"
               className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
             />
           </div>

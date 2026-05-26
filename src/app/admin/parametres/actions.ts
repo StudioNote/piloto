@@ -42,6 +42,7 @@ export async function sauvegarderInfos(formData: FormData) {
     raison_sociale: (formData.get("raison_sociale") as string) || null,
     siret: (formData.get("siret") as string) || null,
     adresse: (formData.get("adresse") as string) || null,
+    cp_ville: (formData.get("cp_ville") as string) || null,
     telephone: (formData.get("telephone") as string) || null,
     email: (formData.get("email") as string) || null,
     site_web: (formData.get("site_web") as string) || null,

@@ -10,6 +10,7 @@ type Prestataire = {
   raison_sociale: string | null;
   siret: string | null;
   adresse: string | null;
+  cp_ville: string | null;
   telephone: string | null;
   email: string | null;
   site_web?: string | null;
@@ -102,8 +103,9 @@ const s = StyleSheet.create({
   bpaLineLabel: { fontSize: 8, color: GRAY, marginBottom: 2 },
 });
 
+//   = narrow no-break space,   = non-breaking space — not rendered by @react-pdf fonts
 function fmt(n: number) {
-  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/[  ]/g, " ") + " €";
 }
 
 function fmtDate(s: string) {
@@ -115,11 +117,11 @@ function fmtDate(s: string) {
 const CONDITIONS = [
   "Acompte de 40 % à la commande, solde de 60 % à la livraison.",
   "Hébergement inclus la 1re année.",
-  "2 séries d’ajustements incluses après livraison.",
+  "2 séries d'ajustements incluses après livraison.",
   "Évolutions ultérieures sur devis.",
   "Maintenance mensuelle optionnelle sur devis séparé.",
-  "Devis valable 30 jours à compter de sa date d’émission.",
-  "Tarif de lancement accordé en échange d’un témoignage.",
+  "Devis valable 30 jours à compter de sa date d'émission.",
+  "Tarif de lancement accordé en échange d'un témoignage.",
 ];
 
 export function DevisPDF({
@@ -142,7 +144,8 @@ export function DevisPDF({
         <View style={s.header}>
           <View style={s.headerLeft}>
             <Text style={s.companyName}>{prestataire.raison_sociale ?? ""}</Text>
-            <Text style={s.companyInfo}>{prestataire.adresse ?? ""}</Text>
+            {prestataire.adresse && <Text style={s.companyInfo}>{prestataire.adresse}</Text>}
+            {prestataire.cp_ville && <Text style={s.companyInfo}>{prestataire.cp_ville}</Text>}
             {prestataire.telephone && <Text style={s.companyInfo}>{prestataire.telephone}</Text>}
             {prestataire.email && <Text style={s.companyInfo}>{prestataire.email}</Text>}
             {prestataire.site_web && <Text style={s.companyInfo}>{prestataire.site_web}</Text>}
@@ -191,14 +194,10 @@ export function DevisPDF({
               {l.description ? <Text style={s.lineDesc}>{l.description}</Text> : null}
             </View>
             <Text style={[s.colQte, s.lineLibelle]}>
-              {Number(l.quantite) === 1 ? "1" : Number(l.quantite).toLocaleString("fr-FR")}
+              {Number(l.quantite) === 1 ? "1" : Number(l.quantite).toLocaleString("fr-FR").replace(/[  ]/g, " ")}
             </Text>
-            <Text style={[s.colPrix, s.lineLibelle]}>
-              {Number(l.prix_unitaire_ht).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
-            </Text>
-            <Text style={[s.colTotal, s.lineLibelle]}>
-              {Number(l.total_ligne).toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €
-            </Text>
+            <Text style={[s.colPrix, s.lineLibelle]}>{fmt(Number(l.prix_unitaire_ht))}</Text>
+            <Text style={[s.colTotal, s.lineLibelle]}>{fmt(Number(l.total_ligne))}</Text>
           </View>
         ))}
 
