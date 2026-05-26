@@ -44,6 +44,7 @@ export async function sauvegarderInfos(formData: FormData) {
     adresse: (formData.get("adresse") as string) || null,
     telephone: (formData.get("telephone") as string) || null,
     email: (formData.get("email") as string) || null,
+    site_web: (formData.get("site_web") as string) || null,
     mentions: (formData.get("mentions") as string) || null,
     updated_at: new Date().toISOString(),
   });

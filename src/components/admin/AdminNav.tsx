@@ -11,6 +11,7 @@ const navItems = [
   { label: "Voix-Off",  href: "/admin/voix-off",   activeText: "text-violet-600",  activeBorder: "border-violet-500" },
   { label: "Prospects", href: "/admin/prospects",   activeText: "text-indigo-600",  activeBorder: "border-indigo-500" },
   { label: "Builder",   href: "/admin/builder",     activeText: "text-amber-600",   activeBorder: "border-amber-500" },
+  { label: "Devis",     href: "/admin/devis",       activeText: "text-orange-600",  activeBorder: "border-orange-500"},
   { label: "Modèles",   href: "/admin/modeles",     activeText: "text-teal-600",    activeBorder: "border-teal-500"  },
   { label: "Paramètres",href: "/admin/parametres",  activeText: "text-slate-600",   activeBorder: "border-slate-400" },
 ];

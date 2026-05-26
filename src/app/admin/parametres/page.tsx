@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/getDb";
 import { Breadcrumb } from "@/components/admin/Breadcrumb";
 import { changerMotDePasse, sauvegarderInfos } from "./actions";
+import { CatalogueDevis } from "@/components/admin/parametres/CatalogueDevis";
 
 export default async function ParametresPage({
   searchParams,
@@ -10,14 +11,13 @@ export default async function ParametresPage({
   const sp = await searchParams;
 
   const db = await getDb();
-  const { data: params } = await db
-    .from("piloto_parametres")
-    .select("*")
-    .eq("id", "singleton")
-    .single();
+  const [{ data: params }, { data: catalogue }] = await Promise.all([
+    db.from("piloto_parametres").select("*").eq("id", "singleton").single(),
+    db.from("piloto_devis_catalogue").select("*").order("ordre", { ascending: true }),
+  ]);
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-6 py-10">
       <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Paramètres" }]} />
 
       <div className="flex items-center gap-3 mb-8">
@@ -157,6 +157,15 @@ export default async function ParametresPage({
             </div>
           </div>
           <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Site web</label>
+            <input
+              type="text"
+              name="site_web"
+              defaultValue={(params as { site_web?: string } | null)?.site_web ?? ""}
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
+          </div>
+          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1.5">
               Mentions diverses{" "}
               <span className="text-gray-400 font-normal">(TVA, mentions légales…)</span>
@@ -175,6 +184,18 @@ export default async function ParametresPage({
             Sauvegarder
           </button>
         </form>
+      </section>
+
+      {/* Catalogue devis */}
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-6">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+          <h2 className="text-base font-semibold text-gray-800">Catalogue devis</h2>
+        </div>
+        <p className="text-xs text-gray-400 mb-5">
+          Éléments disponibles lors de la création d&apos;un devis. Réorganisez l&apos;ordre avec ↑ ↓.
+        </p>
+        <CatalogueDevis items={catalogue ?? []} />
       </section>
     </div>
   );
